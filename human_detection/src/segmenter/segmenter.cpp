@@ -4,13 +4,32 @@
 #include "segmenter.h"
 #include "../seg_lib/segment_depth/segment.h"
 
-Segmenter::segment(image<float>* img)
+std::vector<candidate> Segmenter::segment(image<float>* img)
 {
 	// parameters
 	const float sigma = SIGMA;
 	const float kdepth = KDEPTH;
 	const float knormal = KNORMAL;
-	const int min_sizr = MIN_SIZE;
+	const int min_size = MIN_SIZE;
+	const int num_ccs = 0;
+
+	// subsample image
+	image<float>* sub_img = Segmenter::subsample(img);
+
+	// segment
+	image<rgb>* normal_img;
+	image<rgb>* depthseg;
+	image<rgb>* normalseg;
+	image<rgb>* output_img;
+	universe* u_segmented = segment_image1C(sub_img, sigma, kdepth, knormal, min_size, &num_ccs, &normal_img, &depthseg, &normalseg, &output_img);
+
+	// merge regions
+	return merge_and_filter(sub_img, u_segmented, sub_width, sub_height, img);
+}
+
+image<float>* Segmenter::subsample(image<float>* img)
+{
+	// fixed parameters
 	const int alpha = ALPHA;
 	const int s = ESS;
 
@@ -23,7 +42,6 @@ Segmenter::segment(image<float>* img)
 	// seed for random generator
 	srand(time(NULL));
 
-	// subsample image
 	float lastgoodvalue = 0.0f;
 	float dval = 0.0f;
 	image<float> sub_img = new image<float>(sub_width, sub_height);
@@ -56,4 +74,6 @@ Segmenter::segment(image<float>* img)
 			}
 		}
 	}
+
+	return sub_img;
 }

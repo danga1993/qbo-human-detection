@@ -10,4 +10,7 @@ class Segmenter
 {
 	public:
 		std::vector<candidate> segment(image<float>* img);
+
+	private:
+		image<float>* subsample(image<float>* img);
 }
