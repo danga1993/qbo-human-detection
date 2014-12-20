@@ -98,14 +98,15 @@ SET (CMAKE_CXX_FLAGS_DEBUG "-g -00")
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(training src/training.cpp src/training.h)
+add_executable(training src/training.cpp)
 target_link_libraries(training ${catkin_LIBRARIES})
 add_executable(keypress src/keypress.cpp)
 target_link_libraries(keypress ${catkin_LIBRARIES})
-add_executable(segmentation src/segmentation.cpp)
+add_executable(segmentation src/segmentation.cpp src/segmenter/segmenter.cpp)
 target_link_libraries(segmentation ${catkin_LIBRARIES})
-add_executable(human_detection src/human_detection.cpp src/human_detection.h)
+add_executable(human_detection src/human_detection.cpp)
 target_link_libraries(human_detection ${catkin_LIBRARIES})
