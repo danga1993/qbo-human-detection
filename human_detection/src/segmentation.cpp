@@ -4,27 +4,18 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-//#include "segmenter/segmenter.h"
+#include "seg_lib/segment_depth/segment.h"
 
-void displayImg(cv::Mat& img)
-{
-	// scale values to 8-bit
-	cv::Mat img_disp = img.clone();
-	double minval, maxval;
-	cv::minMaxIdx(img_disp, &minval, &maxval);
+#include "helper/image.h"
 
-	std::cout << "Minval: " << minval << " Maxval" << maxval << std::endl;
-
-	img_disp.convertTo(img_disp, CV_8UC1, 255.0/maxval);
-
-	// show image
-	cv::namedWindow("PUKA", 1);
-	cv::imshow("PUKA", img_disp);
-	cv::waitKey();
-}
+#include "segmenter/segmenter.h"
 
 int main(int argc, char** argv)
 {
+
+	// Segmentation candidates
+	std::vector<candidate> candidates; 
+
 	if (argc != 2)
 		std::cout << "No file specified" << std::endl;
 
@@ -35,9 +26,16 @@ int main(int argc, char** argv)
 	cv::Mat img;
 	file["puka"] >> img;	
 
-	// display on screen
-	displayImg(img);
-
 	// segment
-	segmentImg(img);
+	Segmenter::segment(img, candidates);
+
+	// Display the candidates
+	/*for(std::vector<candidate>::iterator it = candidates.begin(); it != candidates.end(); it++) {
+		 displayImg(it->im); 
+	}*/
+
+	displayImg(img); 
+
+	cv::waitKey();
+
 }

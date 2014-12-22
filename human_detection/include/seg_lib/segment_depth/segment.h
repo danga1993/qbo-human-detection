@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #include <fstream>
 #include <vector>
 #include <algorithm>
-#include "segment.h"
+//#include "segment.h"
 #include <string>
 
 //Headers taken from each file
@@ -347,9 +347,12 @@ static inline float diff1C(image<float> *d, int x1, int y1, int x2, int y2);
 
 image<rgb> *segment_image(image<rgb> *im, float sigma, float c, int min_size,  int *num_ccs);
 /*image<rgb> *segment_image1C(image<float> *im, float sigma, float c, int min_size,
-			  int *num_ccs, ) ;*/
+			  int *num_ccs, ) ;
 image<rgb> *segment_image1C(image<float> *im, float sigma, float Kdepth, float Knormal, int min_size,
-			  int *num_ccs, image<rgb> ** outputs0, image<rgb> ** outputs1, image<rgb> ** outputs2);
+			  int *num_ccs, image<rgb> ** outputs0, image<rgb> ** outputs1, image<rgb> ** outputs2);*/
+universe *segment_image1C(image<float> * im, float sigma, float Kdepth, float Knormal, int min_size,
+			  int * num_ccs, image<rgb> ** normalIm, image<rgb> ** depthseg, image<rgb> ** normalseg, image<rgb> ** output);
+
 
 edge* create_depth_graph(image<float> *d, int *edgeNum);
 

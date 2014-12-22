@@ -31,6 +31,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
 #define NORMALWEIGHTSCALINGFACTOR 1//255/pi gives the values to be in a range that is expect for images (81)
 
+//float angletotal = 0;
+//int countangles = 0;
+
 // random color
 rgb random_rgb(){ 
   rgb c;
@@ -137,7 +140,7 @@ edge* create_depth_graph(image<float> *d, int *edgeNum){
 ********Description: Given normal image and 2 pixels ****************
 ******** 			 returns angular difference in rad***************
 *********************************************************************/
-static inline float anglediff(image<cv::Vec3f> *normals, int x1, int y1, int x2, int y2) {
+float anglediff(image<cv::Vec3f> *normals, int x1, int y1, int x2, int y2) {
   
 	float angleRAD = 0;
 	//do the dot product of the two normal vectors
@@ -146,12 +149,26 @@ static inline float anglediff(image<cv::Vec3f> *normals, int x1, int y1, int x2,
 	float dotc = (imRef(normals, x1, y1)[2])*(imRef(normals, x2, y2)[2]);
 	float dotprod = dota+dotb+dotc;
 
+	
 	angleRAD = acos(dotprod); // acos returns values between 0 and pi (3.14)
 	/*if ( !(x1 % 50) && !(y1 % 50) ){
 		std::cout << "angleRAD: " << angleRAD << std::endl;
 	}*/
+
+	//std::cout << angleRAD << ", ";
+	/*if(!isnan(angleRAD)){
+		angletotal += angleRAD;
+		countangles++;
+		std::cout<< "Total: " <<angletotal<< ", Count:" << countangles << std::endl;
+	}*/
+
 	//TODO Work out a suitable, and logical scaling factor
-	return angleRAD*NORMALWEIGHTSCALINGFACTOR;
+	if(!isnan(angleRAD)){
+		return angleRAD*NORMALWEIGHTSCALINGFACTOR;
+	}
+	else{
+		return 0.0;
+	}
 }
 
 /********************************************************************
@@ -282,6 +299,7 @@ image<cv::Vec3f>* create_normal_image(image<float>* d, universe *u){
 					int chkcomp = u->find( (y+j)*width +(x+i) );
 					if( chkcomp == comp){
 						float intensity = imRef(d, (x+i), (y+j)) ;
+						//std::cout << "Points considered for normal image: (" << x+i << "," << y+j << "," << intensity << ")" << std::endl;
 						cv::Vec4f newpoint = cv::Vec4f((float)i,(float)j,intensity, 1.0);
 						points.push_back(newpoint);
 					}
@@ -323,6 +341,9 @@ image<cv::Vec3f>* create_normal_image(image<float>* d, universe *u){
 				abcd = cv::Mat::ones(4,1,CV_32FC1)*-1;
 				
 			}
+			//only normalise validly found normals
+			cv::normalize(abcd.rowRange(0,3), normal, 1, 0, cv::NORM_L2);	
+		
 		}
 		else {
 			//if we cant find the new normal, use the previously used one
@@ -334,6 +355,9 @@ image<cv::Vec3f>* create_normal_image(image<float>* d, universe *u){
 				abcd = Oldabcd;
 			}
 			//std::cout<<"No Normal for: (" <<  x << "," << y << ")" << std::endl;
+			/*normal.at<float>(0) = 0.001;
+			normal.at<float>(1) = 0.001;
+			normal.at<float>(2) = 0.001;*/
 		}
 		//now normalise into normal
 		cv::normalize(abcd.rowRange(0,3), normal, 1, 0, cv::NORM_L2);		
@@ -349,12 +373,12 @@ image<cv::Vec3f>* create_normal_image(image<float>* d, universe *u){
 		imRef(normals,x,y)[2] = normal.at<float>(2);
 		
 
-
-		/*if ( !(x % 50) && !(y % 50) ){
+		/*
+		if ( !(x % 50) && !(y % 50) ){
 			std::cout << "Normal: ( " << imRef(normals,x,y)[0] << " " << imRef(normals,x,y)[1] << " ";
 			std::cout << imRef(normals,x,y)[2] << " )" << std::endl;
-		}*/
-
+		}
+		//*/
 		}
 	}
 
@@ -445,10 +469,9 @@ image<rgb> *visualise_normals(image<cv::Vec3f> *normalsVec){
 ********             Complete, Depth or Normal only 
 ********             segmentations.						   ****************
 **************************************************************************/
-/*image<rgb> *segment_image1C(image<float> *im, float sigma, float c, int min_size,
-			  int *num_ccs) {*/
-image<rgb> *segment_image1C(image<float> * im, float sigma, float Kdepth, float Knormal, int min_size,
-			  int * num_ccs, image<rgb> ** normalIm, image<rgb> ** depthseg, image<rgb> ** normalseg) {
+
+universe *segment_image1C(image<float> * im, float sigma, float Kdepth, float Knormal, int min_size,
+			  int * num_ccs, image<rgb> ** normalIm, image<rgb> ** depthseg, image<rgb> ** normalseg, image<rgb> ** output) {
   int width = im->width();
   int height = im->height();
 
@@ -491,8 +514,10 @@ image<rgb> *segment_image1C(image<float> * im, float sigma, float Kdepth, float 
   universe *u_normal = segment_graph(width*height, num_normal, g_normal, normalThreshK);
   
   // post process small components of normal graph
-  post_process_components(g_normal, u_normal, num_normal, min_size);
-
+  
+	//TODO TODO TODO
+  //post_process_components(g_normal, u_normal, num_normal, min_size);
+	//TODO TODO TODO UNCOMMENT ^^^: Actually I think its better without!
   //finally, use both segmentations to merge segmentations into regions which are in the same components in
   // both u_normal and u_depth
   universe *u_final = merge_segmentations(u_depth, u_normal, width, height);
@@ -509,14 +534,14 @@ image<rgb> *segment_image1C(image<float> * im, float sigma, float Kdepth, float 
 
   *depthseg = create_imageFrom_universe(u_depth, width, height);
   *normalseg = create_imageFrom_universe(u_normal, width, height);
-  image<rgb> *output = create_imageFrom_universe(u_final, width, height);
+  *output = create_imageFrom_universe(u_final, width, height);
 
 
   delete u_depth;
   delete u_normal;
-  delete u_final;
+  //delete u_final;
 
-  return output;
+  return u_final;
 }
 
 #endif

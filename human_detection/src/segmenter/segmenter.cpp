@@ -1,33 +1,72 @@
 #include <vector>
 #include <time.h>
 
-#include "segmenter.h"
-#include "../seg_lib/segment_depth/segment.h"
+#include <iostream>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
-std::vector<candidate> Segmenter::segment(image<float>* img)
+#include "config.h"
+
+#include "seg_lib/segment_depth/segment-image.h"
+#include "seg_lib/merge_and_filter/merge_and_filter.h"
+
+#include "helper/image.h"
+
+// Segmenter class declaration 
+class Segmenter
+{
+	public:
+		static void segment(cv::Mat& img, std::vector<candidate>& candidates);
+
+	private:
+		static image<float> * subsample(cv::Mat& img);
+
+};
+
+
+// Segments the image using graph-based segmentation algorithm
+void Segmenter::segment(cv::Mat& img, std::vector<candidate>& candidates)
 {
 	// parameters
-	const float sigma = SIGMA;
-	const float kdepth = KDEPTH;
-	const float knormal = KNORMAL;
-	const int min_size = MIN_SIZE;
-	const int num_ccs = 0;
+	float sigma = SIGMA;
+	float kdepth = KDEPTH;
+	float knormal = KNORMAL;
+	int min_size = MIN_SIZE;
+	int num_ccs = 0;
+
+
+	// Clean the candidate vector
+	candidates.clear(); 
 
 	// subsample image
-	image<float>* sub_img = Segmenter::subsample(img);
+	image<float> * sub_img = Segmenter::subsample(img);
 
 	// segment
 	image<rgb>* normal_img;
 	image<rgb>* depthseg;
 	image<rgb>* normalseg;
-	image<rgb>* output_img;
-	universe* u_segmented = segment_image1C(sub_img, sigma, kdepth, knormal, min_size, &num_ccs, &normal_img, &depthseg, &normalseg, &output_img);
+	image<rgb>* jointseg;
+
+	universe* u_segmented = segment_image1C(sub_img, sigma, kdepth, knormal, min_size, &num_ccs, &normal_img, &depthseg, &normalseg, &jointseg);
+
+	display_felzen(jointseg); 
 
 	// merge regions
-	return merge_and_filter(sub_img, u_segmented, sub_width, sub_height, img);
+	merge_and_filter(sub_img, u_segmented, sub_img->width(), sub_img->height(), img, candidates);
+
+	// Free all dynamic memory (this is awful C++)
+	delete normal_img;
+	delete depthseg; 
+	delete normalseg; 
+	delete jointseg;
+	delete sub_img; 
+	delete u_segmented; 
+
 }
 
-image<float>* Segmenter::subsample(image<float>* img)
+
+// Subsamples image before segmenting to reduce graph size
+image<float> * Segmenter::subsample(cv::Mat& img)
 {
 	// fixed parameters
 	const int alpha = ALPHA;
@@ -44,21 +83,30 @@ image<float>* Segmenter::subsample(image<float>* img)
 
 	float lastgoodvalue = 0.0f;
 	float dval = 0.0f;
-	image<float> sub_img = new image<float>(sub_width, sub_height);
 
+	// Container for new subsampled image
+	image<float> * sub_img = new image<float>(sub_width, sub_height);
+
+	// For each pixel of the subsampled image
 	for (int y = 0; y < sub_height; y++) {
 		for (int x = 0; x < sub_width; x++) {
+
 			std::vector<float> samples;
+
+			// Randomly sample pixels from corresponding alphaxalpha region of original image
 			for (int i = 0; i <= s; i++)
 			{
 				int dx = rand() % alpha;
 				int dy = rand() % alpha;
 
 				dval = img.at<float>(y * alpha + dy, x * alpha + dx);
+
 				if (!isnan(dval))
 					samples.push_back(dval);
+			
 			}
 
+			// Pixels in region all NaN (kinect shadow) - Use value from previous region (Match the background)
 			if (samples.empty())
 			{
 				sub_img->access[y][x] = lastgoodvalue;
@@ -75,5 +123,7 @@ image<float>* Segmenter::subsample(image<float>* img)
 		}
 	}
 
-	return sub_img;
+	return sub_img; 
+
+
 }

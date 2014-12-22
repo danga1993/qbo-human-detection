@@ -104,9 +104,12 @@ include_directories(
 
 add_executable(training src/training.cpp)
 target_link_libraries(training ${catkin_LIBRARIES})
+
 add_executable(keypress src/keypress.cpp)
 target_link_libraries(keypress ${catkin_LIBRARIES})
-add_executable(segmentation src/segmentation.cpp src/segmenter/segmenter.cpp)
+
+add_executable(segmentation src/segmentation.cpp src/segmenter/segmenter.cpp src/helper/image.cpp)
 target_link_libraries(segmentation ${catkin_LIBRARIES})
+
 add_executable(human_detection src/human_detection.cpp)
 target_link_libraries(human_detection ${catkin_LIBRARIES})
