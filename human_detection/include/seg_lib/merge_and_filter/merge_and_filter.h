@@ -57,7 +57,7 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 	}
 	//*/
 
-	std::cout << "Components " << components.size() << std::endl; 
+	// std::cout << "Components " << components.size() << std::endl; 
 
 	//for each candidate, calculate the centres of mass, and reject those candidates which are not sufficiently planar
 	for(it = components.begin(); it != components.end(); it++){
@@ -142,7 +142,6 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 	//finally convert images into candidate images and calculate their bounding boxes
 	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
 		if( (!itc-> erased) ){
-			std::cout << "Candidate" << std::endl; 
 			//initialise the bounding box
 			itc->set_boundingBox();
 			itc->create_candidate_image(depthim);

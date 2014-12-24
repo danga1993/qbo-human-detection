@@ -116,9 +116,8 @@
 #define SEGIMKIT "frame_00006.jsc68"
 #define SEGIMLIV "frame_00006.jsc68"
 
-
-
-
+//Tagging params
+#define TAG_AUTO false
 
 
 #endif

@@ -49,12 +49,12 @@ void Segmenter::segment(cv::Mat& img, std::vector<candidate>& candidates)
 
 	universe* u_segmented = segment_image1C(sub_img, sigma, kdepth, knormal, min_size, &num_ccs, &normal_img, &depthseg, &normalseg, &jointseg);
 
-	display_felzen(jointseg); 
+	//display_felzen(jointseg); 
 
 	// merge regions
 	merge_and_filter(sub_img, u_segmented, sub_img->width(), sub_img->height(), img, candidates);
 
-	// Free all dynamic memory (this is awful C++)
+	// Free all dynamic memory (not great C++)
 	delete normal_img;
 	delete depthseg; 
 	delete normalseg; 

@@ -108,7 +108,7 @@ target_link_libraries(training ${catkin_LIBRARIES})
 add_executable(keypress src/keypress.cpp)
 target_link_libraries(keypress ${catkin_LIBRARIES})
 
-add_executable(segmentation src/segmentation.cpp src/segmenter/segmenter.cpp src/helper/image.cpp)
+add_executable(segmentation src/segmentation.cpp src/segmenter/segmenter.cpp src/helper/image.cpp src/tagger/tagger.cpp)
 target_link_libraries(segmentation ${catkin_LIBRARIES})
 
 add_executable(human_detection src/human_detection.cpp)

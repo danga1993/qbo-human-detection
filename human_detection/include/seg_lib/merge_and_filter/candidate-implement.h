@@ -206,8 +206,6 @@ void candidate::create_candidate_image(cv::Mat &depthim){
 		}
 	}
 
-	showImg(im);
-
 }
 
 
