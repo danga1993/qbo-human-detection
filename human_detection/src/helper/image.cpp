@@ -1,5 +1,8 @@
 #include <sstream>
 
+#include <iostream>
+#include <dirent.h>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -53,3 +56,31 @@ void display_felzen(image<rgb> * img) {
   displayImg(img_disp); 
 
 }
+
+
+// List the files in a directory
+void directory_list(std::vector<std::string>& files, std::string path) {
+
+	struct dirent *entry; 
+	DIR *dp; 
+
+	dp = opendir(path.c_str()); 
+
+	if( dp == NULL ) {
+		std::cout << "Directory does not exist" << std::endl; 
+		return; 
+	}
+
+	while( entry = readdir(dp) ) {
+
+		files.push_back(entry->d_name); 
+
+	}
+
+	closedir(dp); 
+
+}
+
+
+
+	
