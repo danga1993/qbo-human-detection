@@ -57,6 +57,11 @@
 #define HOD_BLOCK_SIZE 2
 #define HOD_BLOCK_SHIFT 1
 
+// HOG classification params
+#define HOG_HOR_CELL_COUNT 16
+#define HOG_VER_CELL_COUNT 16
+#define HOG_BIN_COUNT 18
+
 //candidate class params
 #define F_H 58//*3.141592653589793/180)
 #define F_V 45//*3.141592653589793/180)
