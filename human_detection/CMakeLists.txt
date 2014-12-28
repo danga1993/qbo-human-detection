@@ -111,5 +111,11 @@ target_link_libraries(keypress ${catkin_LIBRARIES})
 add_executable(segmentation src/segmentation.cpp src/segmenter/segmenter.cpp src/helper/image.cpp src/tagger/tagger.cpp)
 target_link_libraries(segmentation ${catkin_LIBRARIES})
 
+add_executable(performance src/performance.cpp src/segmenter/segmenter.cpp src/helper/image.cpp src/tagger/tagger.cpp src/feature/rdsfvector.cpp)
+target_link_libraries(performance ${catkin_LIBRARIES})
+
+add_executable(train src/train.cpp src/helper/image.cpp src/feature/rdsfvector.cpp src/segmenter/segmenter.cpp)
+target_link_libraries(train ${catkin_LIBRARIES})
+
 add_executable(human_detection src/human_detection.cpp)
 target_link_libraries(human_detection ${catkin_LIBRARIES})

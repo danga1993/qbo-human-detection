@@ -5,7 +5,7 @@ void displayImg(cv::Mat& img);
 void display_felzen(image<rgb> * img);
 
 // Lists files in a directory
-void directory_list(std::vector<std::string>& files); 
+void directory_list(std::vector<std::string>& files, std::string path); 
   
 
 	

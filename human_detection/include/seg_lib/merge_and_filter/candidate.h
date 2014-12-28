@@ -39,6 +39,7 @@ class candidate {
 		//Constructors & destructors
 		candidate();
 		//candidate(int s);
+		candidate(cv::Mat& input_im, bool input_human);
 		candidate(int x,int y, float z, int i);
 		~candidate();
 

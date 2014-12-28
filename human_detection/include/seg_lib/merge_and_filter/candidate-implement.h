@@ -69,6 +69,12 @@ candidate::candidate(int x,int y, float z, int i){
 	classification = -1;
 }
 
+candidate::candidate(cv::Mat& input_im, bool input_human) {
+
+	im = input_im.clone(); 
+	human = input_human; 
+}
+
 candidate::candidate(){
 }
 

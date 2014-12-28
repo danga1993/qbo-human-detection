@@ -1,39 +1,41 @@
-class RDSFVector
-{
-	public:
-		void RDSFVector();
-		void set_candidate(const candidate& cand); 
-		void getfeatures(int[] feature_ids, cv::Mat& features); 
-		void getfeaturetype(int feature_id); 
-		int length; 
-
-	private:
-		std::vector<RDSFRect> rectangles; 
-		std::vector<cv::Mat> integral_images;
-
-		
-};
-
-
 class RDSFRect
 {
 	public:
 	
-		void RDSFRect(cv::Rect& target_rect, std::vector<cv::Mat> * input_integral_images); 
-	  void get_histograms(cv::Mat& return_hist); 
-		void calculate_distance(RDSFRect& rect); 
+		RDSFRect(cv::Rect target_rect, std::vector<cv::Mat> * input_integral_images); 
+	 	void get_histograms(cv::Mat& return_hist); 
+		float calculate_distance(RDSFRect& rect2); 
 
 	private:
 
 		cv::Rect rect; 
 		cv::Mat histograms; 
 		std::vector<cv::Mat> * integral_images; 
-		int valid; 
+		int valid;
 
 		void compute_histograms(); 
 
 };
 
+
+
+class RDSFVector : public FeatureVector
+{
+	public:
+		RDSFVector();
+		void set_candidate(const candidate& cand); 
+		void getfeatures(std::vector<int> feature_ids, cv::Mat& features); 
+		void getfeaturetype(int feature_id); 
+		int getLength();
+
+	private:
+		std::vector<RDSFRect> rectangles; 
+		std::vector<cv::Mat> integral_images;
+		std::vector<int> rect_partitions;
+		int length;
+
+		
+};
 
 	
 

@@ -20,11 +20,11 @@ int main(int argc, char** argv)
 	cv::Mat img; 
 
 	// Bounding boxes
-  std::vector<cv::Rect> bounding_boxes; 
+	std::vector<cv::Rect> bounding_boxes; 
 	std::vector<candidate> candidates; 
 
 	// Retrieve test data frames 
-	if( TEST_TAG_AUTO ) 
+	if( TEST_TAG_AUTO ) {
 
 		// Get list of files
 		directory_list(files, "test_data"); 
@@ -33,8 +33,8 @@ int main(int argc, char** argv)
 		for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); it++) {
 
 			file.open(*it, cv::FileStorage::READ); 
-			if( !file.isOpened ) {
-				std::cout << "Failed to open file " << *it << std::endl; 
+			if( !file.isOpened() )
+				{ std::cout << "Failed to open file " << *it << std::endl; exit(1); }
 
 			// Load the frame data
 			file["puka"] >> img; 
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
 			// Tag the candidates
 			Tagger::tag(candidates, bounding_boxes); 
 
-		 	for (std::vector<candidate>::iterator it_cand = candidates.begin(); it_cand != files.end(); it_cand++) {
+		 	for (std::vector<candidate>::iterator it_cand = candidates.begin(); it_cand != candidates.end(); it_cand++) {
 
 				// Extract features
 				
@@ -56,7 +56,9 @@ int main(int argc, char** argv)
 
 			}
 
-		} else if ( !TEST_TAG_AUTO ) {
+		}
+
+	} else if ( !TEST_TAG_AUTO ) {
 
 				// loop through candidates
 
@@ -66,7 +68,7 @@ int main(int argc, char** argv)
 
 				// Classify and store correct/not correct
 
-		}
+	}
 		
 
 }
