@@ -3,6 +3,9 @@
 #include <iostream>
 #include <dirent.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -63,6 +66,7 @@ void directory_list(std::vector<std::string>& files, std::string path) {
 
 	struct dirent *entry; 
 	DIR *dp; 
+	struct stat entrystat;
 
 	dp = opendir(path.c_str()); 
 
@@ -73,7 +77,10 @@ void directory_list(std::vector<std::string>& files, std::string path) {
 
 	while( entry = readdir(dp) ) {
 
-		files.push_back(entry->d_name); 
+		stat( entry->d_name, &entrystat );
+
+		if( !S_ISDIR( entrystat.st_mode ) )
+			files.push_back(path + "/" + entry->d_name); 
 
 	}
 

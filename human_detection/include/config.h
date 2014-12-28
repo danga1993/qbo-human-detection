@@ -116,10 +116,18 @@
 #define SEGIMKIT "frame_00006.jsc68"
 #define SEGIMLIV "frame_00006.jsc68"
 
-#define TEST_TAG_AUTO true; 
+#define TEST_TAG_AUTO true 
 
 //Tagging params
 #define TAG_AUTO false
+
+// Feature params
+#define DEPTH_BINS 8
+#define RECT_CELL_SIZE 8
+#define RECT_MAX_DIM 8
+
+#define FEATURE_VECTOR "rdsf"
+
 
 
 #endif
