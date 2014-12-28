@@ -33,9 +33,6 @@ int main(int argc, char** argv)
 		features = new RDSFVector();
 	}
 
-	// Initialise matrix columns
-	train_features.create(0, features->getLength(), CV_32FC1);
-
 	// Get list of files
 	directory_list(files, "train_data"); 
 
@@ -52,7 +49,7 @@ int main(int argc, char** argv)
 
 		file.release();
 
-		// Generate candidate from stored file
+		// Generate candidate from stored file (Note: candidate missing many fields)
 		candidate cand(img, human); 
 
 		// Pass candidate to feature extractor
@@ -63,6 +60,8 @@ int main(int argc, char** argv)
 	
 		// Add onto the main vector
 		train_features.push_back(cand_features);
+
+		//std::cout << train_features;
 
 	}
 	

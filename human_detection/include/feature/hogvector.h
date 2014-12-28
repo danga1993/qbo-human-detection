@@ -1,4 +1,4 @@
-class HOGVector extends FeatureVector
+class HOGVector : public FeatureVector
 {
 	public:
 		void HOGVector();

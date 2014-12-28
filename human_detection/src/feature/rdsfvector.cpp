@@ -18,14 +18,17 @@ RDSFVector::RDSFVector() : integral_images(DEPTH_BINS) {
   int cand_width_cells = CANDIDATE_WIDTH / RECT_CELL_SIZE; 
   int cand_height_cells = CANDIDATE_HEIGHT / RECT_CELL_SIZE;
 
+	/*
+  std::cout << "Cand-width: " << cand_width_cells << std::endl; 
+	std::cout << "Cand-height: " << cand_height_cells << std::endl; */
+
   // Calculate square for each size (1x1 - 8x8)
   for( int side = 1; side <= RECT_MAX_DIM; side++ ) {
 
     for( int x = 0; x < cand_width_cells - (side-1); x++ ) {
       for( int y = 0; y < cand_height_cells - (side-1); y++ ) {
 
-				RDSFRect rect(cv::Rect(x, y, side, side), &integral_images); 
-
+				RDSFRect rect(cv::Rect(x * RECT_CELL_SIZE, y * RECT_CELL_SIZE, side * RECT_CELL_SIZE, side * RECT_CELL_SIZE), &integral_images); 
         rectangles.push_back(rect);
 
       }
@@ -48,6 +51,8 @@ RDSFVector::RDSFVector() : integral_images(DEPTH_BINS) {
 
 	}
 
+	//std::cout << "Partition vector: " << rect_partitions.at(0) << std::endl;
+
 	// Calculate vector length
 	length = (rectangles.size() * (rectangles.size()-1)) / 2;
 
@@ -67,7 +72,9 @@ void RDSFVector::set_candidate(const candidate& cand) {
 	cv::Mat cand_norm;
 
 	// Normalise candidate image
-	cv::normalize(cand.im, cand_norm, 0, 1, cv::NORM_MINMAX);
+	cv::normalize(cand.im, cand_norm, 0, 1, cv::NORM_MINMAX, CV_32F);
+
+	//std::cout << "Normalised candidate: " << cand_norm << std::endl;
 
 	// Fill first bin with 1's (because threshold is at 0)
 	hist_images.at(0) = cv::Mat::ones(CANDIDATE_HEIGHT, CANDIDATE_WIDTH, CV_32FC1);
@@ -75,10 +82,10 @@ void RDSFVector::set_candidate(const candidate& cand) {
 	// Separate image into histogram bins and calculate integral images for each bin
 	for( int bin = 0; bin < DEPTH_BINS; bin++ ) {
 
-		hist_images.at(bin+1) = cv::Mat(imsize, CV_32FC1);
 		if( bin < DEPTH_BINS-1 ) {
 			// Threshold the depth image
-			cv::threshold(cand_norm, hist_images.at(bin+1), (bin+1)/DEPTH_BINS, 1.0, cv::THRESH_BINARY);
+			cv::threshold(cand_norm, hist_images.at(bin+1), (float)(bin+1)/DEPTH_BINS, 1.0, cv::THRESH_BINARY);
+			//std::cout << "Thresholded Candidate: " << hist_images.at(bin+1) << std::endl;
 		} else {
 			// Last thresholded image all zeros
 			hist_images.at(bin+1) = cv::Mat::zeros(imsize, CV_32FC1); 
@@ -89,11 +96,15 @@ void RDSFVector::set_candidate(const candidate& cand) {
 
 		// Calculate histogram bin image (difference of thresholded images)
 		hist_images.at(bin) = hist_images.at(bin) - hist_images.at(bin+1);
+		//std::cout << "Histogram bin: " << hist_images.at(bin) << std::endl;
 
 		// Calculate integral image
-		cv::integral(hist_images.at(bin), integral_images.at(bin)); 	
+		cv::integral(hist_images.at(bin), integral_images.at(bin), CV_32F); 	
+		//std::cout << "Integral: " << integral_images.at(bin).at<float>(128,64) << std::endl;
 
 	}
+
+	//std::cout << "Hist: " << hist_images.at(5) << std::endl;
 
 } 
 
@@ -155,6 +166,9 @@ RDSFRect::RDSFRect(cv::Rect target_rect, std::vector<cv::Mat> * input_integral_i
 	valid = false;
 	histograms = cv::Mat::zeros(1, DEPTH_BINS, CV_32FC1); 
 
+	//std::cout << "Created rectangle: " << rect << std::endl; 
+	//std::cout << "Hist " << histograms << std::endl;
+
 }
 
 
@@ -164,18 +178,29 @@ void RDSFRect::compute_histograms() {
 	// Check if already computed	
 	if( valid ) 
 		return; 
-
 	
 	// Compute histograms from integral images
 	for( int bin = 0; bin < DEPTH_BINS; bin++ ) {
 
-		// This is dodgy but we're only using it locally - Pointer invalid if vector modified
-		cv::Mat * integral_image = &((*integral_images).at(bin)); 
+		// Matrix header copied but data pointer is shared
+		cv::Mat integral_image = (*integral_images).at(bin); 
+	
+		//std::cout << integral_image.at<float>(128, 64) << " ";
 
 		// Calculate values in each bin
-		histograms.at<float>(0, bin) = (*integral_image).at<float>(rect.br()) + (*integral_image).at<float>(rect.tl() - cv::Point(1,1)) - (*integral_image).at<float>(rect.x + rect.width-1, rect.y-1) - (*integral_image).at<float>(rect.x-1, rect.y + rect.height-1); 
+		histograms.at<float>(0, bin) = integral_image.at<float>(rect.br()) + integral_image.at<float>(rect.tl()) - integral_image.at<float>(rect.y, rect.x + rect.width) - integral_image.at<float>(rect.y + rect.height, rect.x);
+
+
+	 /*	std::cout << "Integral image points - TL: " << rect.tl()
+							<< " TR: " << rect.x + rect.width << "," << rect.y 
+							<< " BR: " << rect.br()
+							<< " BL: " << rect.x << "," << rect.y + rect.height << std::endl; */
 
 	}
+
+	//std::cout << std::endl;
+
+	//std::cout << "Histograms: " << histograms << std::endl;
 
 	// Normalize the histogram 
 	cv::normalize(histograms, histograms, 1, 0, cv::NORM_L1); 
