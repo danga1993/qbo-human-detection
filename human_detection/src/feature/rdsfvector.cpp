@@ -78,7 +78,7 @@ void RDSFVector::set_candidate(const candidate& cand) {
 		hist_images.at(bin+1) = cv::Mat(imsize, CV_32FC1);
 		if( bin < DEPTH_BINS-1 ) {
 			// Threshold the depth image
-			cv::threshold(cand.im, hist_images.at(bin+1), (bin+1)/DEPTH_BINS, 1.0, cv::THRESH_BINARY);
+			cv::threshold(cand_norm, hist_images.at(bin+1), (bin+1)/DEPTH_BINS, 1.0, cv::THRESH_BINARY);
 		} else {
 			// Last thresholded image all zeros
 			hist_images.at(bin+1) = cv::Mat::zeros(imsize, CV_32FC1); 
@@ -108,7 +108,7 @@ void RDSFVector::getfeaturetype(int feature_id) {
 void RDSFVector::getfeatures(std::vector<int> feature_ids, cv::Mat& features) {
 
   // Clear features matrix
-  features = cv::Mat::zeros(rectangles.size() * rectangles.size() / 2, 1, CV_32FC1); 
+  features = cv::Mat::zeros(1, length, CV_32FC1); 
 
   // If feature vector empty get all features
   if( feature_ids.empty() ) {

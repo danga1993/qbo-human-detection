@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 	}
 
 	// Initialise matrix columns
-	train_features.create(0, features->getLength(), CV_32FC1); 
+	train_features.create(0, features->getLength(), CV_32FC1);
 
 	// Get list of files
 	directory_list(files, "train_data"); 
@@ -59,12 +59,10 @@ int main(int argc, char** argv)
 		features->set_candidate(cand);  
 
 		// Extract the features
-		//features->getfeatures(feature_ids, cand_features);
-
+		features->getfeatures(feature_ids, cand_features);
+	
 		// Add onto the main vector
-		//train_features.push_back(cand_features);
-
-		
+		train_features.push_back(cand_features);
 
 	}
 	
