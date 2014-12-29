@@ -51,6 +51,7 @@
 #define DELTAXZ 0.5
 #define DELTAY 1.0
 
+/*
 //classification params
 #define HOD_CELL_SIZE 16
 #define HOD_ORIENT_BINS 18
@@ -61,6 +62,7 @@
 #define HOG_HOR_CELL_COUNT 16
 #define HOG_VER_CELL_COUNT 16
 #define HOG_BIN_COUNT 18
+*/
 
 //candidate class params
 #define F_H 58//*3.141592653589793/180)
@@ -131,7 +133,19 @@
 #define RECT_CELL_SIZE 8
 #define RECT_MAX_DIM 8
 
-#define FEATURE_VECTOR "rdsf"
+// HOG classification params
+#define HOG_CELL_SIZE 16
+#define HOG_BIN_COUNT 18
+#define HOG_BLOCK_SIZE 2
+#define HOG_BLOCK_SHIFT 1
+
+
+#define FEATURE_RDSF 0
+#define FEATURE_HOG 1
+
+#define FEATURE_VECTOR FEATURE_HOG
+
+
 
 
 

@@ -8,6 +8,7 @@
 
 #include "feature/featurevector.h"
 #include "feature/rdsfvector.h"
+#include "feature/hogvector.h"
 
 #include "config.h"
 
@@ -29,8 +30,13 @@ int main(int argc, char** argv)
 	std::vector<int> feature_ids;
 
 	// Switch the feature vectors
-	if( FEATURE_VECTOR == "rdsf" ) {
-		features = new RDSFVector();
+	switch( FEATURE_VECTOR ) {
+		case FEATURE_RDSF: 
+			features = new RDSFVector(); 
+			break; 
+		case FEATURE_HOG: 
+			features = new HOGVector(); 
+			break; 
 	}
 
 	// Get list of files
@@ -61,7 +67,8 @@ int main(int argc, char** argv)
 		// Add onto the main vector
 		train_features.push_back(cand_features);
 
-		//std::cout << train_features;
+		std::cout << "Actual: " << train_features.size() << std::endl;
+		std::cout << "Theory: " << features->getLength() << std::endl;
 
 	}
 	
