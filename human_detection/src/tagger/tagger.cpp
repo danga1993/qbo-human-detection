@@ -38,7 +38,27 @@ void Tagger::tag(std::vector<candidate>& candidates) {
 // Automatically tags candidates based on stored bounding boxes
 void Tagger::tag(std::vector<candidate>& candidates, std::vector<cv::Rect>& bounding_boxes)  {
 
-	// 
+	for( std::vector<candidate>::iterator candidate = candidates.begin(); candidate != candidates.end(); candidate++ ) {
+
+		if( candidate->erased ) 
+			continue; 
+
+		// Check for sufficient overlap between candidate and rectangle
+		for( std::vector<cv::Rect>::iterator box = bounding_boxes.begin(); box != bounding_boxes.end(); box++ ) {
+
+			// Area of intersection
+			int area_intersect = (candidate->boundingBox & *box).area(); 
+			int area_total = candidate->boundingBox.area() + box->area(); 
+
+			// Check for required intersection fraction
+			if( (float)area_intersect / area_total > MIN_INTERSECT_RATIO )
+				candidate->human = true; 
+			else
+				candidate->human = false; 
+
+		}
+
+	}
 
 }
 

@@ -127,6 +127,7 @@
 
 //Tagging params
 #define TAG_AUTO false
+#define MIN_INTERSECT_RATIO 0.8
 
 // Feature params
 #define DEPTH_BINS 8
