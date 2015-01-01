@@ -15,64 +15,77 @@
 int main(int argc, char** argv)
 {
 
+	cv::FileStorage file;
+	std::vector<std::string> files; 
+
 	// Segmentation candidates
 	std::vector<candidate> candidates; 
 
 	// Bouding boxes for pre-tagging candidates
 	std::vector<cv::Rect> bounding_boxes; 
 
-	if (argc != 2)
-		std::cout << "No file specified" << std::endl;
+	// Get list of files
+	directory_list(files, "frames"); 
 
-	// load file
-	cv::FileStorage file(argv[1], cv::FileStorage::READ);
+	// Loop through 
+	for (std::vector<std::string>::iterator file_it = files.begin(); file_it != files.end(); file_it++) {
 
-	// load image to matrix
-	cv::Mat img;
-	file["puka"] >> img;	
+		// load file
+		file.open(*file_it, cv::FileStorage::READ);
 
-	// segment
-	Segmenter::segment(img, candidates);
+		// load image to matrix
+		cv::Mat img;
+		file["puka"] >> img;	
 
-	// Tag the candidates
-	if( TAG_AUTO ) {
+		// segment
+		Segmenter::segment(img, candidates);
 
-		// Retrieve bounding boxes for image
-		if( file["boundingbox"].type() == cv::FileNode::USER ) {
-			file["boundingbox"] >> bounding_boxes; 
+		// Tag the candidates
+		if( TAG_AUTO ) {
+
+			// Retrieve bounding boxes for image
+		//	if( file["boundingbox"].type() == cv::FileNode::USER ) {
+				file["boundingbox"] >> bounding_boxes; 
+			//} else {
+				//std::cout << "No bounding box defined for candidate" << std::endl; 
+			//}
+
+			std::cout << "Box " << bounding_boxes.at(0) << std::endl;
+
+			Tagger::tag(candidates, bounding_boxes); 
+
 		} else {
-			std::cout << "No bounding box defined for candidate" << std::endl; 
+
+			Tagger::tag(candidates); 
+
 		}
-
-		Tagger::tag(candidates, bounding_boxes); 
-
-	} else {
-
-		Tagger::tag(candidates); 
-
-	}
+			
+		file.release(); 
 	
+		// Save the candidates
+		std::stringstream fname; 
+		static int i = 0; 
 
-	// Save the candidates
-	std::stringstream fname; 
-	int i = 0; 
+		for (std::vector<candidate>::iterator it = candidates.begin(); it != candidates.end(); it++) {
 
-	for (std::vector<candidate>::iterator it = candidates.begin(); it != candidates.end(); it++) {
+			if( !it->erased ) {
 
-		if( !it->erased ) {
+				// Generate filename
+				fname.str(""); 
+				fname << "candidates/" << ((it->human) ? "positive/" : "negative/") << i << ".mat"; 
 
-			// Generate filename
-			fname.str(""); 
-			fname << "candidates/" << i << ".mat"; 
+				// Open file
+			 	file.open(fname.str(), cv::FileStorage::WRITE);
 
-			// Open file
-		 	file = cv::FileStorage(fname.str(), cv::FileStorage::WRITE);
+				file << "image" << it->im; 
+				file << "human" << it->human;
 
-			file << "image" << it->im; 
-			file << "human" << it->human;
+				file.release();
 
-			i++; 
+				i++; 
 		
+			}
+
 		}
 
 	}

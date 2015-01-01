@@ -126,8 +126,8 @@
 #define TEST_TAG_AUTO true 
 
 //Tagging params
-#define TAG_AUTO false
-#define MIN_INTERSECT_RATIO 0.8
+#define TAG_AUTO true
+#define MIN_INTERSECT_RATIO 0.5
 
 // Feature params
 #define DEPTH_BINS 8
@@ -140,11 +140,10 @@
 #define HOG_BLOCK_SIZE 2
 #define HOG_BLOCK_SHIFT 1
 
-
 #define FEATURE_RDSF 0
 #define FEATURE_HOG 1
 
-#define FEATURE_VECTOR FEATURE_HOG
+#define FEATURE_VECTOR FEATURE_RDSF
 
 
 

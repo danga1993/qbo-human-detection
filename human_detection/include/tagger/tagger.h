@@ -6,6 +6,7 @@ class Tagger
 	public:
 		static void tag(std::vector<candidate>& candidates); 
 		static void tag(std::vector<candidate>& candidates, std::vector<cv::Rect>& bounding_boxes);
+		static bool candidate_intersect(candidate& cand, cv::Rect& box); 
 	
 };
 

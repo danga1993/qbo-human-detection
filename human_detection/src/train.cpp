@@ -75,16 +75,35 @@ int main(int argc, char** argv)
 		// Add to labels
 		train_labels.push_back((float)cand.human); 
 
-		/*std::cout << "Actual: " << train_features.size() << std::endl;
-		std::cout << "Theory: " << features->getLength() << std::endl;*/
+		//std::cout << "Actual: " << train_features.size() << std::endl;
+		//std::cout << "Theory: " << features->getLength() << std::endl;
 
 	}
 
+	/*cv::Mat temp = cv::Mat::zeros(1, 120786, CV_32F);  
+	train_features.push_back(temp); 
+	train_labels.push_back((float)0); 
+
+	temp = cv::Mat::ones(1, 120786, CV_32F);  
+	train_features.push_back(temp); 
+	train_labels.push_back((float)1); 
+	
+	for( int i = 0; i < 10; i++ ) {
+		train_features.push_back(train_features.row(i)); 
+		train_labels.push_back(train_labels.row(i)); 
+	} 
+
+	cv::Mat row0 = train_features.row(0); 
+	cv::Mat row1 = train_features.row(1); */
+
+	//std::cout << "Equ: " << (row0 == row1) << std::endl;
+		
+
 	std::cout << "Train vector: " << train_features.size() << std::endl;
-	std::cout << "Label vector: " << train_labels.size() << std::endl;
+	std::cout << "Label vector: " << train_labels << std::endl;
 
 	// Send to classifier - NOTE: TRY REAL ADABOOST
-	CvBoostParams params(CvBoost::REAL, 10, 0, 1, false, NULL); 
+	CvBoostParams params(CvBoost::REAL, 50, 0, 1, false, NULL); 
 
 	// Create masks
 	cv::Mat sample_idx = cv::Mat::ones(1, train_features.rows, CV_8U); 

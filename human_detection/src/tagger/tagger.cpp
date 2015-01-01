@@ -4,6 +4,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include "seg_lib/segment_depth/segment.h"
+#include "helper/image.h"
+
 #include "seg_lib/merge_and_filter/candidate.h"
 
 #include "tagger/tagger.h"
@@ -20,7 +23,7 @@ void Tagger::tag(std::vector<candidate>& candidates) {
 	
 		if( !it->erased ) {
 
-			cv::imshow("CANDIDATES", it->im);
+			displayImg(it->im, "CANDIDATES");
 
 			// User response
 			int resp = cv::waitKey(); 
@@ -46,19 +49,37 @@ void Tagger::tag(std::vector<candidate>& candidates, std::vector<cv::Rect>& boun
 		// Check for sufficient overlap between candidate and rectangle
 		for( std::vector<cv::Rect>::iterator box = bounding_boxes.begin(); box != bounding_boxes.end(); box++ ) {
 
-			// Area of intersection
-			int area_intersect = (candidate->boundingBox & *box).area(); 
-			int area_total = candidate->boundingBox.area() + box->area(); 
-
-			// Check for required intersection fraction
-			if( (float)area_intersect / area_total > MIN_INTERSECT_RATIO )
-				candidate->human = true; 
-			else
-				candidate->human = false; 
+			candidate->human = candidate_intersect(*candidate, *box); 
 
 		}
+	
+		std::cout << "Candidate is human: " << candidate->human << std::endl;
+
+		// Show candidate
+		//displayImg(candidate->im, "CANDIDATES");
+
+		// User response
+		//int resp = cv::waitKey(); 
 
 	}
+
+}
+
+
+bool Tagger::candidate_intersect(candidate& cand, cv::Rect& box) {
+
+	// Area of intersection
+	int area_intersect = (cand.boundingBox & box).area(); 
+	int area_total = cand.boundingBox.area() + box.area() - area_intersect;
+
+	/* std::cout << "Candidate: " << cand.boundingBox << " Box: " << box << std::endl;
+  std::cout << "Intersect area: " << area_intersect << " Total area: " << area_total << std::endl; */
+
+	// Check for required intersection fraction
+	if( (float)area_intersect / area_total > MIN_INTERSECT_RATIO )
+		return true; 
+	else
+		return false; 
 
 }
 

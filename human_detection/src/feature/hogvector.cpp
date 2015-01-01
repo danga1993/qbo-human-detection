@@ -6,7 +6,7 @@
 #include "feature/hogvector.h"
 #include "config.h"
 
-void HOGVector::set_candidate(const candidate& cand)
+void HOGVector::set_candidate(candidate cand)
 {
 	cv::Size cand_size(CANDIDATE_WIDTH, CANDIDATE_HEIGHT);
 
@@ -24,18 +24,68 @@ void HOGVector::set_candidate(const candidate& cand)
 	cv::Mat dx_kern = (cv::Mat_<float>(1,3) << -0.5, 0, 0.5); 
 	cv::Mat dy_kern = (cv::Mat_<float>(3,1) << -0.5, 0, 0.5);
 	cv::Point anchor(-1, -1); 
-
+	
 	// Differentiate image
 	cv::filter2D(cand.im, diff_hor, CV_32F, dx_kern, anchor, 0, cv::BORDER_REPLICATE);
 	cv::filter2D(cand.im, diff_vert, CV_32F, dy_kern, anchor, 0, cv::BORDER_REPLICATE);
 
 	// Calculate angle of each pixel (uses fast atan2)
-	cv::cartToPolar(diff_hor, diff_vert, polar_mag, polar_angle, true); 
+	cv::cartToPolar(diff_hor, diff_vert, polar_mag, polar_angle, true);
+
+	//std::cout << "Calculating gradients" << cand.im.at<float>(0,0) << std::endl;
+	//calculate_gradients(cand.im, polar_mag, polar_angle); 
 
 	// Length of feature vector - CHECK
 	length = HOG_BIN_COUNT * HOG_BLOCK_SIZE * HOG_BLOCK_SIZE * ((cell_cols / HOG_BLOCK_SHIFT) - ((HOG_BLOCK_SIZE - (cell_cols % HOG_BLOCK_SHIFT) - HOG_BLOCK_SHIFT) / HOG_BLOCK_SHIFT)) * ((cell_rows / HOG_BLOCK_SHIFT) - ((HOG_BLOCK_SIZE - (cell_rows % HOG_BLOCK_SHIFT) - HOG_BLOCK_SHIFT) / HOG_BLOCK_SHIFT));
 
 }
+
+void HOGVector::calculate_gradients(cv::Mat& im, cv::Mat& polar_mag, cv::Mat& polar_angle) {
+
+	float dx, dy;
+
+	//std::cout << "input image of width: " << im.cols << ", height: " << im.rows << std::endl;
+	std::cout << im.at<float>(0,0);
+
+	//using kernel 0.5*[-1 0 1] for dx and 0.5*[-1 0 1]' for dy
+	for(int x = 1; x < im.cols - 1; x++){
+		for(int y = 1; y < im.rows - 1; y++){
+			float sumx = 0, sumy = 0, deg = 0, mag = 0;
+
+			//if pixel is defined set gradient orientation and mag, else leave is at zero
+			if( !cvIsNaN(im.at<float>(cv::Point(x,y))) ){
+
+				if( !cvIsNaN(im.at<float>(cv::Point(x-1,y))) && !cvIsNaN(im.at<float>(cv::Point(x+1,y))) ){
+					sumx-= 0.5*im.at<float>(cv::Point(x-1,y));
+					sumx+= 0.5*im.at<float>(cv::Point(x+1,y));
+				}
+				if( !cvIsNaN(im.at<float>(cv::Point(x,y-1))) && !cvIsNaN(im.at<float>(cv::Point(x,y+1))) ){
+					sumy-= 0.5*im.at<float>(cv::Point(x,y-1));
+					sumy+= 0.5*im.at<float>(cv::Point(x,y+1));
+				}
+				dx = sumx;
+				dy = sumy;
+				deg = cv::fastAtan2(dy,dx);
+				if( (dx == 0) && (dy == 0)){
+					mag = 0;
+				}
+				else{
+					mag = sqrt(dx*dx+dy*dy);
+				}
+				//std::cout << "dx: " << dx << ", dy: " << dy << ", deg: " << deg << ", mag: " << mag <<std::endl;
+			}
+//			std::cout << "(" << x << "," << y << ") has dir " << deg << " degrees" << std::endl;
+	//		std::cout << "(" << x << "," << y << ") has magnitude " << mag << std::endl;
+
+			polar_angle.at<float>(cv::Point(x,y)) = deg;
+			polar_mag.at<float>(cv::Point(x,y)) = mag;
+		}
+	}
+
+
+}
+
+	
 
 // Calculates histogram for each cell in image
 void HOGVector::compute_cells() {
@@ -51,8 +101,10 @@ void HOGVector::compute_cells() {
 			for( int offset_y = 0; offset_y < HOG_CELL_SIZE; offset_y++ ) {
 				for( int offset_x = 0; offset_x < HOG_CELL_SIZE; offset_x++ ) {
 
+
 					// Split the value between the two nearest bins
 					float bin_exact = polar_angle.at<float>(y + offset_y, x + offset_x) * HOG_BIN_COUNT / 360; 
+
 					int bin_floor = cvFloor(bin_exact); 
 					int bin_ceil  = cvCeil(bin_exact); 
 

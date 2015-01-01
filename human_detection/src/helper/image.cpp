@@ -14,7 +14,7 @@
 #include "helper/image.h"
 
 // Displays an image using OpenCV and waits for user
-void displayImg(cv::Mat& img)
+void displayImg(cv::Mat& img, std::string window_name = "")
 {
 
 	static int win_num = 0; 
@@ -27,13 +27,22 @@ void displayImg(cv::Mat& img)
 
 	img_disp.convertTo(img_disp, CV_8UC1, 255.0/maxval);
 
-	win_name << "PUKA" << win_num;
+	if( window_name.empty() ) {
 
-	// show image
-	cv::namedWindow(win_name.str(), CV_WINDOW_NORMAL);
-	cv::imshow(win_name.str(), img_disp);
+		win_name << "PUKA" << win_num;
 
-	win_num++; 
+		// show image
+		cv::namedWindow(win_name.str(), CV_WINDOW_NORMAL);
+		cv::imshow(win_name.str(), img_disp);
+
+		win_num++; 
+
+	} else {
+
+		cv::namedWindow(window_name.c_str(), CV_WINDOW_NORMAL);
+		cv::imshow(window_name.c_str(), img_disp);
+
+	}
 
 }
 
@@ -77,9 +86,10 @@ void directory_list(std::vector<std::string>& files, std::string path) {
 
 	while( entry = readdir(dp) ) {
 
-		stat( entry->d_name, &entrystat );
+		if( stat((path + "/" + entry->d_name).c_str(), &entrystat ) != 0 ) 
+			std::cout << "Error getting file details" << std::endl; 
 
-		if( !S_ISDIR( entrystat.st_mode ) )
+		if( S_ISREG( entrystat.st_mode ) ) 
 			files.push_back(path + "/" + entry->d_name); 
 
 	}

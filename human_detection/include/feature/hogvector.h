@@ -2,13 +2,10 @@ class HOGVector : public FeatureVector
 {
 	public:
 		HOGVector();
-		void set_candidate(const candidate& cand);
+		void set_candidate(const candidate cand);
 		void getfeatures(std::vector<int> feature_ids, cv::Mat& features);
 		void getfeaturetype(int feature_id);
 		int getLength();
-
-		void compute_cells(); 
-		void compute_descriptor(cv::Mat& descriptor);
 
 	private: 
 		
@@ -16,4 +13,9 @@ class HOGVector : public FeatureVector
 		cv::Mat polar_mag; 
 		cv::Mat polar_angle; 
 		int length;
+		
+		void compute_cells(); 
+		void compute_descriptor(cv::Mat& descriptor);
+		void calculate_gradients(cv::Mat& im, cv::Mat& polar_mag, cv::Mat& polar_angle);
+
 };

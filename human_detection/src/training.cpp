@@ -37,8 +37,19 @@ void training_collect::keypressCallback(const std_msgs::String::ConstPtr& msg)
 // called when a frame is published
 void training_collect::imageCallback(const sensor_msgs::ImageConstPtr& original_image)
 {
-	if (key_pressed)
-	{ 
+
+	static ros::Time current_time; 
+	static ros::Time prev_run(0); 
+
+	//if (key_pressed)
+	//{ 
+
+	current_time = ros::Time::now(); 
+
+	if( current_time - prev_run > ros::Duration(5.0) ) {
+
+		prev_run = current_time; 
+
 		cv_bridge::CvImagePtr in_msg;
 
 		// convert frame to OpenCV format
@@ -67,6 +78,7 @@ void training_collect::imageCallback(const sensor_msgs::ImageConstPtr& original_
 		frame_count++;
 
 		key_pressed = false;
+
 	}
 }
 
