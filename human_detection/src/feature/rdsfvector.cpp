@@ -14,8 +14,6 @@
 // Initialize vector by computing required rectangle coordinates
 RDSFVector::RDSFVector() : integral_images(DEPTH_BINS) {
 
-//	rectfile.open("rects", cv::FileStorage::WRITE); 
-
   // Candidate dimensions in cells
   int cand_width_cells = CANDIDATE_WIDTH / RECT_CELL_SIZE; 
   int cand_height_cells = CANDIDATE_HEIGHT / RECT_CELL_SIZE;
@@ -67,7 +65,7 @@ int RDSFVector::getLength()
 
      
 // Computes integral images for each histogram bin
-void RDSFVector::set_candidate(const candidate cand) {
+void RDSFVector::set_candidate(const candidate& cand) {
 
 	std::vector<cv::Mat> hist_images(DEPTH_BINS+1); 
 	cv::Size imsize(CANDIDATE_WIDTH, CANDIDATE_HEIGHT);
@@ -92,9 +90,6 @@ void RDSFVector::set_candidate(const candidate cand) {
 			// Last thresholded image all zeros
 			hist_images.at(bin+1) = cv::Mat::zeros(imsize, CV_32FC1); 
 		}
-
-		// We might not need this if floats subtract to zero as required
-		// hist_images[bin+1].convertTo(hist_images[bin+1], CV_8UC1);
 
 		// Calculate histogram bin image (difference of thresholded images)
 		hist_images.at(bin) = hist_images.at(bin) - hist_images.at(bin+1);

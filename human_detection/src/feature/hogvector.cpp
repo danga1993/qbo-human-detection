@@ -6,7 +6,7 @@
 #include "feature/hogvector.h"
 #include "config.h"
 
-void HOGVector::set_candidate(candidate cand)
+void HOGVector::set_candidate(const candidate& cand)
 {
 	cv::Size cand_size(CANDIDATE_WIDTH, CANDIDATE_HEIGHT);
 
@@ -39,7 +39,7 @@ void HOGVector::set_candidate(candidate cand)
 	length = HOG_BIN_COUNT * HOG_BLOCK_SIZE * HOG_BLOCK_SIZE * ((cell_cols / HOG_BLOCK_SHIFT) - ((HOG_BLOCK_SIZE - (cell_cols % HOG_BLOCK_SHIFT) - HOG_BLOCK_SHIFT) / HOG_BLOCK_SHIFT)) * ((cell_rows / HOG_BLOCK_SHIFT) - ((HOG_BLOCK_SIZE - (cell_rows % HOG_BLOCK_SHIFT) - HOG_BLOCK_SHIFT) / HOG_BLOCK_SHIFT));
 
 }
-
+/*
 void HOGVector::calculate_gradients(cv::Mat& im, cv::Mat& polar_mag, cv::Mat& polar_angle) {
 
 	float dx, dy;
@@ -84,7 +84,7 @@ void HOGVector::calculate_gradients(cv::Mat& im, cv::Mat& polar_mag, cv::Mat& po
 
 
 }
-
+*/
 	
 
 // Calculates histogram for each cell in image
