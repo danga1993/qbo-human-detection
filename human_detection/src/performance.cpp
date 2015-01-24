@@ -76,79 +76,86 @@ int main(int argc, char** argv)
 			file["puka"] >> img; 
 			file["boundingbox"] >> bounding_boxes; 
 
-			std::cout << "Bounding boxes" << bounding_boxes.at(0) << std::endl;
+			// Resegment several times as segmentation has random element
+			for( int seg_avg = 0; seg_avg < AVERAGE_SEGMENT_COUNT; seg_avg++ ) {
 
-			// Segment the frame
-			Segmenter::segment(img, candidates);
+				// Segment the frame
+				Segmenter::segment(img, candidates);
 
-		 	for (std::vector<candidate>::iterator it_cand = candidates.begin(); it_cand != candidates.end(); it_cand++) {
-
-				if( it_cand->erased ) 
-					continue; 
-
-				// Extract features
-				features->set_candidate(*it_cand);  
-				features->getfeatures(feature_ids, cand_features);
-
-				//std::cout << "Prediction: " <<  boost.predict(cand_features) << std::endl;
-
-				// Run each candidate through classifier
-				if( boost.predict(cand_features) == 1.0 ) {
-						it_cand->classification = true; 
-				} else
-						it_cand->classification = false;
-
-			}
-
-			// Now match with boxes
-			for( std::vector<cv::Rect>::iterator box = bounding_boxes.begin(); box != bounding_boxes.end(); box++ ) {
-
-				int box_match = 0; 
-
-				for (std::vector<candidate>::iterator it_cand = candidates.begin(); it_cand != candidates.end(); it_cand++) {
+			 	for (std::vector<candidate>::iterator it_cand = candidates.begin(); it_cand != candidates.end(); it_cand++) {
 
 					if( it_cand->erased ) 
 						continue; 
 
-					// Check if box matched
-					if( Tagger::candidate_intersect(*it_cand, *box) ) {
-		
-						it_cand->human = true; 
-						
-						// A positive candidate matches the box
-						if( it_cand->classification ) 
-							box_match++; 
+					// Extract features
+					features->set_candidate(*it_cand);  
+					features->getfeatures(feature_ids, cand_features);
 
+					//std::cout << "Prediction: " <<  boost.predict(cand_features) << std::endl;
+
+					float prediction = boost.predict(cand_features, cv::Mat(), cv::Range::all(), false, true); 
+
+					// Run each candidate through classifier
+					if( prediction > BOOST_THRESHOLD ) {
+							it_cand->classification = true; 
+					} else
+							it_cand->classification = false;
+
+				}
+
+				// Now match with boxes
+				for( std::vector<cv::Rect>::iterator box = bounding_boxes.begin(); box != bounding_boxes.end(); box++ ) {
+
+					std::cout << "Bounding box" << *box << std::endl;
+
+					int box_match = 0; 
+
+					for (std::vector<candidate>::iterator it_cand = candidates.begin(); it_cand != candidates.end(); it_cand++) {
+
+						if( it_cand->erased ) 
+							continue; 
+
+						// Check if box matched
+						if( Tagger::candidate_intersect(*it_cand, *box) ) {
+		
+							it_cand->human = true; 
+						
+							// A positive candidate matches the box
+							if( it_cand->classification ) 
+								box_match++; 
+
+						}
+						
+					}
+
+					if( box_match > 1 ) {
+						std::cout << "More than one candidate per box" << std::endl;
 					}
 						
+					// The box has been matched by at least one candidate
+					if( box_match > 0) {
+						true_positives++; 
+					}
+
+					if( box_match == 0 ) 	
+						std::cout << "Not Matched" << std::endl;
+
 				}
 
-				if( box_match > 1 ) {
-					std::cout << "More than one candidate per box" << std::endl;
-				}
-						
-				// The box has been matched by at least one candidate
-				if( box_match > 0) {
-					true_positives++; 
-				}
+				// Find false positives
+		 		for (std::vector<candidate>::iterator it_cand = candidates.begin(); it_cand != candidates.end(); it_cand++) {
 
-				if( box_match == 0 ) 	
-					std::cout << "Not Matched" << std::endl;
-
-			}
-
-			// Find false positives
-	 		for (std::vector<candidate>::iterator it_cand = candidates.begin(); it_cand != candidates.end(); it_cand++) {
-
-				if( it_cand->erased ) 
-				continue; 
+					if( it_cand->erased ) 
+					continue; 
 			
-				if( it_cand->classification == true && it_cand->human == false ) 
-					false_positives++;
+					if( it_cand->classification == true && it_cand->human == false ) 
+						false_positives++;
+
+				}
+
+				actual_positives += bounding_boxes.size();
 
 			}
-
-			actual_positives += bounding_boxes.size();
 
 		}
 

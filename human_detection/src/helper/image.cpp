@@ -89,8 +89,22 @@ void directory_list(std::vector<std::string>& files, std::string path) {
 		if( stat((path + "/" + entry->d_name).c_str(), &entrystat ) != 0 ) 
 			std::cout << "Error getting file details" << std::endl; 
 
-		if( S_ISREG( entrystat.st_mode ) ) 
-			files.push_back(path + "/" + entry->d_name); 
+		if( S_ISREG( entrystat.st_mode ) ) {
+			files.push_back(path + "/" + entry->d_name); 	
+		} 
+
+		if( entry->d_type & DT_DIR ) {
+
+			if( strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0 ) {
+
+				std::cout << "Opening directory " << entry->d_name << std::endl;
+
+				// Is a directory
+				directory_list(files, path + "/" + entry->d_name);
+
+			}
+
+		}
 
 	}
 

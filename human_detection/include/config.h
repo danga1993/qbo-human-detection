@@ -110,6 +110,8 @@
 //training params
 #define CAND_OVRLP_TRUE 0.4
 
+#define AVERAGE_SEGMENT_COUNT 10
+
 
 #define COMPLOG "complete/log.txt"
 #define COMPBOXES "complete/boxes"
@@ -144,6 +146,9 @@
 #define FEATURE_HOG 1
 
 #define FEATURE_VECTOR FEATURE_RDSF
+
+// Classification
+#define BOOST_THRESHOLD 0
 
 
 

@@ -44,15 +44,20 @@ int main(int argc, char** argv)
 		if( TAG_AUTO ) {
 
 			// Retrieve bounding boxes for image
-		//	if( file["boundingbox"].type() == cv::FileNode::USER ) {
-				file["boundingbox"] >> bounding_boxes; 
-			//} else {
-				//std::cout << "No bounding box defined for candidate" << std::endl; 
-			//}
+			//if( file["boundingbox"].type() == cv::FileNode::USER ) {
 
-			std::cout << "Box " << bounding_boxes.at(0) << std::endl;
+			file["boundingbox"] >> bounding_boxes; 
 
-			Tagger::tag(candidates, bounding_boxes); 
+			if( bounding_boxes.size() > 0 ) {
+
+				std::cout << "Box " << bounding_boxes.at(0) << std::endl;
+
+				Tagger::tag(candidates, bounding_boxes); 
+
+
+			} else {
+				std::cout << "No bounding box defined for candidate" << std::endl; 
+			}
 
 		} else {
 

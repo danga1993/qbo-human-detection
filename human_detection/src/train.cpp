@@ -103,7 +103,7 @@ int main(int argc, char** argv)
 	std::cout << "Label vector: " << train_labels << std::endl;
 
 	// Send to classifier - NOTE: TRY REAL ADABOOST
-	CvBoostParams params(CvBoost::REAL, 50, 0, 1, false, NULL); 
+	CvBoostParams params(CvBoost::REAL, 100, 0, 1, false, NULL); 
 
 	// Create masks
 	cv::Mat sample_idx = cv::Mat::ones(1, train_features.rows, CV_8U); 
