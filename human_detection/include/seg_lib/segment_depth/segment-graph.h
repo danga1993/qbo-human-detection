@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #include "disjoint-set.h"
 
 // threshold function
-#define THRESHOLD(size, c) (c/size)
+#define THRESHOLD(size, c) (c/pow(size,size_penalty))
 
 typedef struct {
   float w;
@@ -46,7 +46,7 @@ bool operator<(const edge &a, const edge &b) {
  * c: constant for treshold function.
  */
 universe *segment_graph(int num_vertices, int num_edges, edge *edges, 
-			float c) { 
+			float c, float size_penalty) { 
   // sort edges by weight
   std::sort(edges, edges + num_edges);
 
@@ -58,6 +58,7 @@ universe *segment_graph(int num_vertices, int num_edges, edge *edges,
   for (int i = 0; i < num_vertices; i++)
     threshold[i] = THRESHOLD(1,c);
 
+	
   // for each edge, in non-decreasing weight order...
   for (int i = 0; i < num_edges; i++) {
     edge *pedge = &edges[i];
@@ -66,12 +67,15 @@ universe *segment_graph(int num_vertices, int num_edges, edge *edges,
     int a = u->find(pedge->a);
     int b = u->find(pedge->b);
     if (a != b) {
+      
       if ((pedge->w <= threshold[a]) &&
 	  (pedge->w <= threshold[b])) {
 	u->join(a, b);
 	a = u->find(a);
 	threshold[a] = pedge->w + THRESHOLD(u->size(a), c);
-      }
+
+      } 
+ 
     }
   }
 

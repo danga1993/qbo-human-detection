@@ -142,28 +142,31 @@ void candidate::create_candidate_image(cv::Mat &depthim){
 		//std::cout<< "Mask val: " << oscm.at<uchar>(cv::Point(it->x-xmin,it->y-ymin)) << std::endl;
 	}
 
+
+
 	//for a candidate_image of wc x hc, we must scale the image by min(wc/width*alpha, hc/height*alpha). Note we are still alpha too small!
 	float scaling = std::min((float)CANDIDATE_WIDTH/(width*ALPHA), (float)CANDIDATE_HEIGHT/(height*ALPHA));
 	//this gives us a new sub-candidate image within which we rebuild out scaled candidate
-	cv::Mat nscm = cv::Mat(cv::Size(scaling*width, scaling*height), CV_8UC1); //New Scale Candidate Mask
+	cv::Mat nscm = cv::Mat(cv::Size(scaling*width*ALPHA, scaling*height*ALPHA), CV_8UC1); //New Scale Candidate Mask
 	//std::cout << "Scaling: " << scaling << ", new: width = " << nscm.size().width << ", height = " << nscm.size().height << std::endl; 
 	//fill in this new scaled image
 	for(int x = 0; x < nscm.size().width; x++){
 		for(int y = 0; y<nscm.size().height; y++){
-			int oldx = x/scaling;
-			int oldy = y/scaling;
+			int oldx = x/(scaling*ALPHA);
+			int oldy = y/(scaling*ALPHA);
 			//std::cout<< "new (" << x << "," << y << "), comes from old (" << oldx << "," << oldy << ")" << std::endl;
 			nscm.at<uchar>(cv::Point(x,y)) = oscm.at<uchar>(cv::Point(oldx, oldy));
 			//std::cout<< "Mask val at (" << x << "," << y << "): " << nscm.at<uchar>(cv::Point(x,y)) << std::endl;
 		}
 	}
-	
+
 	//now expand with square kernel, using the openCv dilation function
 	cv::Mat element = getStructuringElement( cv::MORPH_RECT, cv::Size( DILATING_SCALE,DILATING_SCALE ));
 	// Apply the dilation operation
-	dilate( nscm, nscm, element);
+	//dilate( nscm, nscm, element);
 
 	//im = nscm;
+	//displayImg(nscm);
 
 	//and fill in candidate region with pels from the original image
 	cv::Mat fsci = cv::Mat::zeros(cv::Size(ALPHA*width*scaling, ALPHA*height*scaling), CV_32FC1); //final Scale Candidate image
@@ -175,16 +178,24 @@ void candidate::create_candidate_image(cv::Mat &depthim){
 		for(int y = 0; y < fsci.size().height; y++){
 			int cellx = x/(ALPHA); //As the cell image has already been scaled, the only difference is alpha!
 			int celly = y/(ALPHA);
-			if(nscm.at<uchar>(cv::Point(cellx,celly)) == '1'){
+			if(nscm.at<uchar>(cv::Point(x,y)) == '1'){
+
+				/*
 				cv::Point origin_segmented = cv::Point(xmin, ymin)*ALPHA;
 				cv::Point cell_segmented = origin_segmented + cv::Point(cellx*ALPHA, celly*ALPHA);
 				cv::Point offset_segmented = cv::Point(x/scaling - cellx*ALPHA, y/scaling - celly*ALPHA);
-				cv::Point depth_image_pel = cell_segmented+offset_segmented;
-				/*/std::cout<<"Assigning (" << x << "," << y << ")";
+				cv::Point depth_image_pel = cell_segmented+offset_segmented; */
+
+				cv::Point origin_segmented = cv::Point(xmin, ymin)*ALPHA;
+				cv::Point offset_segmented = cv::Point(x/scaling, y/scaling);
+				cv::Point depth_pel = origin_segmented + offset_segmented; 
+
+				/*std::cout<<"Assigning (" << x << "," << y << ")";
 				std::cout<<"from (" << depth_image_pel.x << "," << depth_image_pel.y << ") to: " << depthim.at<float>(depth_image_pel) << std::endl;
 				std::cout<<"Candidate_image size: " << fsci.size().width << " by " <<fsci.size().height<< std::endl;
-				std::cout<<"mask width: " << width << ", height: " <<height<< ", scaling: "<< scaling << std::endl;*/
-				fsci.at<float>(cv::Point(x,y)) = depthim.at<float>(depth_image_pel);
+				std::cout<<"mask width: " << width << ", height: " <<height<< ", scaling: "<< scaling << std::endl; */
+
+				fsci.at<float>(cv::Point(x,y)) = depthim.at<float>(depth_pel);
 			}
 			else {
 				fsci.at<float>(cv::Point(x,y)) = 0.0/0.0; //NaN i.e undefined
@@ -194,7 +205,7 @@ void candidate::create_candidate_image(cv::Mat &depthim){
 				cv::imshow("Building up of Candidate image", fsci);
 				cv::waitKey(1);
 				lastcelly = celly;
-			}*/
+			} */
 		}
 	}
 

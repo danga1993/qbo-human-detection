@@ -26,7 +26,8 @@
 #define ALPHA 8
 #define ESS 13
 #define KDEPTH 6
-#define KNORMAL 1.6
+//#define KNORMAL 1.6
+#define KNORMAL 1.8
 #define MIN_SIZE 30
 #define CANDIDATE_WIDTH 64
 #define CANDIDATE_HEIGHT 128
@@ -41,15 +42,15 @@
 #define MIN_SIZE 50*/
 
 //merge and filter params
-#define MIN_INLIER_FRACTION 0.5 // for rejecting non-planar regions
+#define MIN_INLIER_FRACTION 0.7 // for rejecting non-planar regions
 #define VALID_VALUE 0.000001
 #define CANDIDATE_MIN_WIDTH 0.3 //meters
-#define CANDIDATE_MAX_WIDTH 1.5 //meters
+#define CANDIDATE_MAX_WIDTH 2 //meters
 #define CANDIDATE_MIN_HEIGHT 1.0 //meters
-#define CANDIDATE_MAX_HEIGHT 1.7 //meters
+#define CANDIDATE_MAX_HEIGHT 2 //meters
 #define CANDIDATE_MIN_DENSITY 0.2
-#define DELTAXZ 0.5
-#define DELTAY 1.0
+#define DELTAXZ 0.2
+#define DELTAY 0.5
 
 /*
 //classification params
@@ -126,6 +127,7 @@
 #define SEGIMLIV "frame_00006.jsc68"
 
 #define TEST_TAG_AUTO true 
+
 
 //Tagging params
 #define TAG_AUTO true

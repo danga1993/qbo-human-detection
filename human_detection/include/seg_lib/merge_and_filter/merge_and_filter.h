@@ -57,7 +57,7 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 	}
 	//*/
 
-	// std::cout << "Components " << components.size() << std::endl; 
+	std::cout << "Components " << components.size() << std::endl; 
 
 	//for each candidate, calculate the centres of mass, and reject those candidates which are not sufficiently planar
 	for(it = components.begin(); it != components.end(); it++){
@@ -80,13 +80,25 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 			//std::cout << "Keep Candidate: " << it->second.id << " with fraction " << fraction << std::endl;
 			candidates.push_back(it->second);
 		} else {
-			//std::cout << "Remove Candidate: " << it->second.id << " with fraction " << fraction << std::endl;
+			std::cout << "Remove Candidate: " << it->second.id << " with fraction " << fraction << std::endl;
 		}
 		
 	}
 
 	//free up some memory
 	components.clear();
+
+	// Re ID the candidates
+	{ 
+		int i = 0; 
+
+		for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++, i++) {
+			itc->id = i; 	
+		}
+	}
+	
+	// Display the candidates before merge
+	display_candidates(width, height, candidates); 
 	
 	//sort vector into order, largest first. (given we have overloaded the '<' operator to work with size)
 	std::sort(candidates.rbegin(), candidates.rend());
@@ -103,19 +115,23 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 		if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || (size/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
 			//search for larger candidates (i.e. from end() to where we are now; itc)
 			cv::Point centrexz = cv::Point(itc->centre.x, itc->centre.z);
+			std::cout << "Trying to merge: " << itc->id << " into: " << std::endl;
 			///*			
 			for(std::vector<candidate>::iterator itc1 = candidates.begin(); *itc1 > *itc ; itc1++){
 				if (!itc1->erased){
 					//std::cout << "Test Candidate Size: " << itc1->size() << std::endl;
+					std::cout << itc1->id << " ";
 					//merge if the following conditions are met
 					cv::Point testxz = cv::Point(itc1->centre.x, itc1->centre.z);
-					float xz_distance = cv::norm(cv::Mat(centrexz),cv::Mat(testxz));
-					float y_distance = abs(itc->centre.y-itc1->centre.y);
-					//std::cout<<"Proximity: delxz =" << xz_distance << " dely =" << y_distance << std::endl;
-					if( (xz_distance < DELTAXZ) && (y_distance < DELTAY) ){
+				//	float xz_distance = cv::norm(cv::Mat(centrexz),cv::Mat(testxz));
+					float z_distance = abs(itc->centre.z-itc1->centre.z); 
+					float x_distance = abs(itc->centre.x-itc1->centre.x);
+					// std::cout<<"Proximity: delxz =" << xz_distance << " dely =" << y_distance << std::endl;
+					if( (z_distance < DELTAXZ) && (x_distance < DELTAY) ){
 						 itc1->merge(*itc); //merge itc into itc1
 						 itc->erased = true; //and erase itc
-						//std::cout<<"Merged Candidate " << itc->id << " into " << itc1->id <<std::endl;	
+						 std::cout<<"Merged Candidate " << itc->id << " into " << itc1->id <<std::endl;	
+						 continue; 
 					}
 				}
 			}//*/
@@ -128,13 +144,18 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
 		//std::cout << "Candidate Size: " << itc->size() << std::endl;
 		if( (!itc-> erased) ){
+
+			int p_height = std::max(it->second.ymax - it->second.ymin,1);
+			int p_width = std::max(it->second.xmax - it->second.xmin,1);
+
 			//std::cout << "Evaluating Candidate of Height: " << itc->real_height << ", Width: " << itc->real_width << std::endl;
 			//std::cout << "Height < MIN_HEIGHT: " << (itc->real_height < CANDIDATE_MIN_HEIGHT) << std::endl;
 			//std::cout << "Width < MIN_WIDTH: " << (itc->real_width < CANDIDATE_MIN_WIDTH) << std::endl;
 			//now reject any candidates that are still minimum post merge
-			if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) ){
+			/*if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || ((float)itc->size()/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
+				std::cout << "Rejected" << std::endl;
 				itc->erased = true;
-			}
+			} */
 		}
 	}
 	//*/

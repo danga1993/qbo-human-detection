@@ -7,10 +7,13 @@
 
 #include "config.h"
 
+#define SEGMENT_H
 #include "seg_lib/segment_depth/segment-image.h"
-#include "seg_lib/merge_and_filter/merge_and_filter.h"
 
 #include "helper/image.h"
+
+#include "seg_lib/merge_and_filter/merge_and_filter.h"
+
 
 // Segmenter class declaration 
 class Segmenter
@@ -29,8 +32,10 @@ void Segmenter::segment(cv::Mat& img, std::vector<candidate>& candidates)
 {
 	// parameters
 	float sigma = SIGMA;
-	float kdepth = KDEPTH;
-	float knormal = KNORMAL;
+	//float kdepth = KDEPTH;
+	//float knormal = KNORMAL;
+	float kdepth = 3; 
+	float knormal = 18; 
 	int min_size = MIN_SIZE;
 	int num_ccs = 0;
 
@@ -46,10 +51,17 @@ void Segmenter::segment(cv::Mat& img, std::vector<candidate>& candidates)
 	image<rgb>* depthseg;
 	image<rgb>* normalseg;
 	image<rgb>* jointseg;
+	cv::Mat normaldiff_img; 
 
-	universe* u_segmented = segment_image1C(sub_img, sigma, kdepth, knormal, min_size, &num_ccs, &normal_img, &depthseg, &normalseg, &jointseg);
+	display_felzen(sub_img); 
 
-	//display_felzen(jointseg); 
+	universe* u_segmented = segment_image1C(sub_img, sigma, kdepth, knormal, min_size, &num_ccs, &normal_img, &depthseg, &normalseg, normaldiff_img, &jointseg);
+
+	displayImg(normaldiff_img, "Normal diffs"); 
+	//display_felzen(normal_img); 
+	display_felzen(normalseg);
+	display_felzen(depthseg);
+	display_felzen(jointseg); 
 
 	// merge regions
 	merge_and_filter(sub_img, u_segmented, sub_img->width(), sub_img->height(), img, candidates);
