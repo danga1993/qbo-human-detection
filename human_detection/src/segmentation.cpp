@@ -22,7 +22,8 @@ int main(int argc, char** argv)
 	std::vector<candidate> candidates; 
 
 	// Bouding boxes for pre-tagging candidates
-	std::vector<cv::Rect> bounding_boxes; 
+	std::vector<cv::Rect> bounding_positive; 
+	std::vector<cv::Rect> bounding_negative; 
 
 	// Get list of files
 	directory_list(files, "frames"); 
@@ -37,33 +38,47 @@ int main(int argc, char** argv)
 		cv::Mat img;
 		file["puka"] >> img;	
 
-		// segment
-		Segmenter::segment(img, candidates);
+		// If manually segmenting or automatic
+		if( SEGMENT_AUTO ) {
 
-		// Tag the candidates
-		if( TAG_AUTO ) {
+			// Segment
+			Segmenter_Auto::segment(img, candidates);
 
-			// Retrieve bounding boxes for image
-			//if( file["boundingbox"].type() == cv::FileNode::USER ) {
+			// Tag the candidates
+			if( TAG_AUTO ) {
 
-			file["boundingbox"] >> bounding_boxes; 
+				// Retrieve bounding boxes for image
+				//if( file["boundingbox"].type() == cv::FileNode::USER ) {
 
-			if( bounding_boxes.size() > 0 ) {
+				file["bounding_positive"] >> bounding_positive; 
 
-				std::cout << "Box " << bounding_boxes.at(0) << std::endl;
+				if( bounding_positive.size() > 0 ) {
 
-				Tagger::tag(candidates, bounding_boxes); 
+					std::cout << "Box " << bounding_positive.at(0) << std::endl;
 
+					Tagger::tag(candidates, bounding_positive); 
+
+
+				} else {
+					std::cout << "No bounding box defined for candidate" << std::endl; 
+				}
 
 			} else {
-				std::cout << "No bounding box defined for candidate" << std::endl; 
+
+				Tagger::tag(candidates); 
+
 			}
 
+		// Manual segmentation (tagging implicit)
 		} else {
 
-			Tagger::tag(candidates); 
+			file["bounding_positive"] >> bounding_positive; 
+			file["bounding_negative"] >> bounding_negative;
 
-		}
+			// Segment and tag
+			Segmenter_Manual::segment(img, candidates, bounding_positive, bounding_negative); 
+
+		}			
 			
 		file.release(); 
 	

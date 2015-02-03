@@ -11,21 +11,67 @@
 #include "seg_lib/merge_and_filter/merge_and_filter.h"
 
 #include "helper/image.h"
+#include "segmenter/segmenter.h"
 
-// Segmenter class declaration 
-class Segmenter
-{
-	public:
-		static void segment(cv::Mat& img, std::vector<candidate>& candidates);
+// Manually segments a frame using the tagged boxes
+void Segmenter_Manual::segment(cv::Mat& img, std::vector<candidate>& candidates, std::vector<cv::Rect> bounding_positive, std::vector<cv::Rect> bounding_negative) {
 
-	private:
-		static image<float> * subsample(cv::Mat& img);
+	// Clean the candidate vector
+	candidates.clear(); 
 
-};
+	// Candidate id
+	int i = 0; 
 
+	// Loop through positives
+	for (std::vector<cv::Rect>::iterator it = bounding_positive.begin(); it != bounding_positive.end(); it++, i++) {
+
+		// Create candidate
+		candidate cand(it->x/ALPHA, it->y/ALPHA, 0, i);
+		create_candidate_image(img, cand.im, *it); 
+		cand.human = true; 
+		candidates.push_back(cand); 
+
+	}
+
+	// Loop through negatives
+	for (std::vector<cv::Rect>::iterator it = bounding_negative.begin(); it != bounding_negative.end(); it++, i++) {
+
+		// Create candidate
+		candidate cand(it->x/ALPHA, it->y/ALPHA, 0, i);
+		create_candidate_image(img, cand.im, *it); 
+		cand.human = false; 
+		candidates.push_back(cand); 
+
+	}
+
+}
+
+
+// Scales a rectangular region to fit candidate window
+void Segmenter_Manual::create_candidate_image(cv::Mat& depth_img, cv::Mat& cand_img, cv::Rect& region) {
+
+		// Generate candidate image (NOTE: Using section from built in create_candidate_image function)
+		float scaling = std::min((float)CANDIDATE_WIDTH/(region.width), (float)CANDIDATE_HEIGHT/(region.height));
+	
+		// Scaled dimensions
+		cv::Size dims = cv::Size(floor(region.width * scaling), floor(region.height * scaling)); 
+
+		cand_img = cv::Mat(cv::Size(CANDIDATE_WIDTH, CANDIDATE_HEIGHT), CV_32FC1);
+
+		cv::Point image_centre = cv::Point((CANDIDATE_WIDTH)/2, (CANDIDATE_HEIGHT)/2);
+		cv::Point start = image_centre - cv::Point(dims.width/2, dims.height/2);
+
+		// Center the scaled candidate in the candidate window
+		for(int x = 0; x < dims.width; x++){
+			for(int y = 0; y < dims.height; y++){
+				cand_img.at<float>(start+cv::Point(x,y)) = depth_img.at<float>(cv::Point(region.x + x/scaling, region.y + y/scaling));
+			}
+		}
+
+}
 
 // Segments the image using graph-based segmentation algorithm
-void Segmenter::segment(cv::Mat& img, std::vector<candidate>& candidates)
+void Segmenter_Auto::segment(cv::Mat& img, std::vector<candidate>& candidates)
 {
 	// parameters
 	float sigma = SIGMA;
@@ -39,7 +85,7 @@ void Segmenter::segment(cv::Mat& img, std::vector<candidate>& candidates)
 	candidates.clear(); 
 
 	// subsample image
-	image<float> * sub_img = Segmenter::subsample(img);
+	image<float> * sub_img = subsample(img);
 
 	// segment
 	image<rgb>* normal_img;
@@ -66,7 +112,7 @@ void Segmenter::segment(cv::Mat& img, std::vector<candidate>& candidates)
 
 
 // Subsamples image before segmenting to reduce graph size
-image<float> * Segmenter::subsample(cv::Mat& img)
+image<float> * Segmenter_Auto::subsample(cv::Mat& img)
 {
 	// fixed parameters
 	const int alpha = ALPHA;

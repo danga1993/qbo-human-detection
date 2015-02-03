@@ -17,7 +17,8 @@ int main(int argc, char** argv)
 	std::vector<std::string> files; 
 
 	cv::Mat img; 
-	std::vector<cv::Rect> labels; 
+	std::vector<cv::Rect> labels_positive; 
+	std::vector<cv::Rect> labels_negative; 
 
 	Labeller label; 
 	
@@ -44,7 +45,7 @@ int main(int argc, char** argv)
 		// Label the image
 		label.set_frame(img); 
 		label.label_frame();
-		label.get_labels(labels); 
+		label.get_labels(labels_positive, labels_negative); 
 
 		// Remake the file
 		remove((*it).c_str()); 
@@ -52,7 +53,8 @@ int main(int argc, char** argv)
 		file.open(*it, cv::FileStorage::WRITE); 
 
 		// Save labels
-		file << "boundingbox" << labels; 
+		file << "bounding_positive" << labels_positive; 
+		file << "bounding_negative" << labels_negative; 
 		file << "puka" << img; 
 
 		file.release();

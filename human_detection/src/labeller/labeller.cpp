@@ -118,11 +118,20 @@ int Labeller::keyprocess(char c) {
 	if( c == -1 ) 
 		return 1;
 
-	// Save active label
-	if( c == 's' ) {
+	// Save active label (positive)
+	if( c == 'p' ) {
 
 		// Stop drawing rectangle
-		labels.push_back(active_label); 
+		labels_positive.push_back(active_label); 
+		display_active = false; 
+
+	}
+
+	// Save active label (negative)
+	if( c == 'n' ) {
+
+		// Stop drawing rectangle
+		labels_negative.push_back(active_label); 
 		display_active = false; 
 
 	}
