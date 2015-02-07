@@ -137,7 +137,7 @@
 #define RECT_MAX_DIM 8
 
 // Segmentation 
-#define SEGMENT_AUTO true
+#define SEGMENT_AUTO false
 
 // HOG classification params
 #define HOG_CELL_SIZE 16

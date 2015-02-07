@@ -30,17 +30,7 @@ int main(int argc, char** argv)
 	// Loop through 
 	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); it++) {
 
-		file.open(*it, cv::FileStorage::READ); 
-
-		std::cout << "Opening file " << *it << std::endl;
-
-		if( !file.isOpened() )
-			{ std::cout << "Failed to open file " << *it << std::endl; exit(1); }
-
-		// Load image out of the file
-		file["puka"] >> img; 
-
-		file.release();
+		image_read(*it + "/depth.png", img); 
 		
 		// Label the image
 		label.set_frame(img); 
@@ -48,14 +38,13 @@ int main(int argc, char** argv)
 		label.get_labels(labels_positive, labels_negative); 
 
 		// Remake the file
-		remove((*it).c_str()); 
+		remove((*it + "/data.mat").c_str()); 
 	
-		file.open(*it, cv::FileStorage::WRITE); 
+		file.open((*it + "/data.mat"), cv::FileStorage::WRITE); 
 
 		// Save labels
 		file << "bounding_positive" << labels_positive; 
 		file << "bounding_negative" << labels_negative; 
-		file << "puka" << img; 
 
 		file.release();
 

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/opencv.hpp>
 
 #include "labeller/labeller.h"
 
@@ -35,9 +36,11 @@ void Labeller::set_frame(cv::Mat& in_img) {
 	double min, max;
 	cv::minMaxIdx(img, &min, &max); 
 	img.convertTo(img, CV_8UC1, 255.0/max); 
+	cv::cvtColor(img, img, CV_GRAY2BGR); 
 	
 	// Clear label rectangles
-	labels.clear(); 
+	labels_positive.clear(); 
+	labels_negative.clear(); 
 
 	// Zero the active label
 	active_label = cv::Rect(0,0,0,0); 
@@ -59,12 +62,15 @@ void Labeller::label_frame() {
 		img_draw = img.clone(); 
 
 		// Add rectangles
-		for( std::vector<cv::Rect>::iterator rect = labels.begin(); rect != labels.end(); rect++ )
-			cv::rectangle(img_draw, *rect, CV_RGB(255,255,255), 2);
+		for( std::vector<cv::Rect>::iterator rect = labels_positive.begin(); rect != labels_positive.end(); rect++ )
+			cv::rectangle(img_draw, *rect, CV_RGB(0,255,0), 2);
+
+		for( std::vector<cv::Rect>::iterator rect = labels_negative.begin(); rect != labels_negative.end(); rect++ )
+			cv::rectangle(img_draw, *rect, CV_RGB(255,0,0), 2);
 
 		// Draw active rectangle
 		if( display_active )
-			cv::rectangle(img_draw, active_label, CV_RGB(255,0,0), 2);	
+			cv::rectangle(img_draw, active_label, CV_RGB(255,255,255), 2);	
 	
 		// Draw window
 		imshow("Labeller", img_draw); 
@@ -89,6 +95,10 @@ void Labeller::mouseprocess(int event, int x, int y, int flags, void * instance)
 
 	Labeller * labeller = (Labeller*) instance; 
 	cv::Rect& active_label = labeller->active_label; 
+
+	// Make sure coordinates cannot exceed bounds
+	x = (x >= 0) ? x : 0; 
+	y = (y >= 0) ? y : 0; 
 
 	switch( event ) {
 
@@ -145,9 +155,10 @@ int Labeller::keyprocess(char c) {
 }
 
 
-void Labeller::get_labels(std::vector<cv::Rect>& label_out) { 
+void Labeller::get_labels(std::vector<cv::Rect>& label_out_positive, std::vector<cv::Rect>& label_out_negative) { 
 
-	label_out = labels; 
+	label_out_positive = labels_positive; 
+	label_out_negative = labels_negative; 
 
 }
 

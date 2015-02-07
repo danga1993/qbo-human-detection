@@ -102,7 +102,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(training src/training.cpp)
+add_executable(training src/training.cpp src/helper/image.cpp)
 target_link_libraries(training ${catkin_LIBRARIES})
 
 add_executable(keypress src/keypress.cpp)

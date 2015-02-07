@@ -18,10 +18,12 @@ int main(int argc, char** argv)
 	cv::FileStorage file;
 	std::vector<std::string> files; 
 
+	cv::Mat img; 
+
 	// Segmentation candidates
 	std::vector<candidate> candidates; 
 
-	// Bouding boxes for pre-tagging candidates
+	// Bounding boxes for pre-tagging candidates
 	std::vector<cv::Rect> bounding_positive; 
 	std::vector<cv::Rect> bounding_negative; 
 
@@ -31,12 +33,11 @@ int main(int argc, char** argv)
 	// Loop through 
 	for (std::vector<std::string>::iterator file_it = files.begin(); file_it != files.end(); file_it++) {
 
-		// load file
-		file.open(*file_it, cv::FileStorage::READ);
+		// Load depth image
+		image_read(*file_it + "/depth.png", img); 
 
-		// load image to matrix
-		cv::Mat img;
-		file["puka"] >> img;	
+		// Load bounding box data
+		file.open(*file_it + "/data.mat", cv::FileStorage::READ);
 
 		// If manually segmenting or automatic
 		if( SEGMENT_AUTO ) {
@@ -92,15 +93,14 @@ int main(int argc, char** argv)
 
 				// Generate filename
 				fname.str(""); 
-				fname << "candidates/" << ((it->human) ? "positive/" : "negative/") << i << ".mat"; 
+				fname << "candidates/" << ((it->human) ? "positive/" : "negative/") << i; 
 
-				// Open file
-			 	file.open(fname.str(), cv::FileStorage::WRITE);
+				make_directory(fname.str()); 
+				
+		displayImg(it->im); 
+		cv::waitKey();
 
-				file << "image" << it->im; 
-				file << "human" << it->human;
-
-				file.release();
+				image_write(fname.str() + "/depth.png", it->im);  
 
 				i++; 
 		

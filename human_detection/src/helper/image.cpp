@@ -1,7 +1,10 @@
 #include <sstream>
 
 #include <iostream>
+#include <tr1/regex>
 #include <dirent.h>
+
+#include <boost/regex.hpp>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -14,7 +17,7 @@
 #include "helper/image.h"
 
 // Displays an image using OpenCV and waits for user
-void displayImg(cv::Mat& img, std::string window_name = "")
+void displayImg(cv::Mat& img, std::string window_name)
 {
 
 	static int win_num = 0; 
@@ -70,6 +73,76 @@ void display_felzen(image<rgb> * img) {
 }
 
 
+// Stores a mat file as a PNG
+void image_write(std::string filename, cv::Mat& img) { 
+
+	cv::Mat img_u; 
+	cv::FileStorage file;
+
+	// Compression parameters
+	std::vector<int> png_params; 
+	png_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	png_params.push_back(9); 		// Higher takes longer but smaller
+
+	// If storing a colour image or float (depth)
+	if( img.type() == CV_32FC1 ) {
+
+		// Calculate scale factor for maximum range
+		double minval, maxval;
+		cv::minMaxIdx(img, &minval, &maxval);
+
+		int scale = 65535 / maxval; 		
+
+		// Convert to 16-bit unsigned for PNG
+		img.convertTo(img_u, CV_16UC1, scale);
+
+		std::cout << "Scale: " << scale << std::endl;
+
+		// Store the scale factor
+		file.open(filename + ".mat", cv::FileStorage::WRITE);
+		file << "scale" << scale; 
+		file.release();
+
+	} else {
+		img_u = img; 
+	}
+
+	// Write output pngs
+	imwrite(filename, img_u, png_params);
+
+}
+
+// Reads a mat file from PNG
+void image_read(std::string filename, cv::Mat& img) { 
+
+	cv::FileStorage file;
+
+	img = cv::imread(filename, CV_LOAD_IMAGE_ANYDEPTH); 
+
+	if( img.empty() ) 
+		{ std::cout << "Cannot load image " << filename << std::endl; exit(1); }
+
+	// TODO - CONVERT ZERO TO NAN
+
+	// If the image is single channel 16-bit - Depth image
+	if( img.type() == CV_16UC1 ) {
+
+		int scale; 
+
+		// Read the scale factor
+		file.open(filename + ".mat", cv::FileStorage::READ); 
+		file["scale"] >> scale; 
+		file.release(); 
+
+		img.convertTo(img, CV_32FC1, 1.0/scale);
+		std::cout << "Converting " << filename << std::endl;
+
+	} 		
+
+}
+
+
+
 // List the files in a directory
 void directory_list(std::vector<std::string>& files, std::string path) {
 
@@ -89,18 +162,26 @@ void directory_list(std::vector<std::string>& files, std::string path) {
 		if( stat((path + "/" + entry->d_name).c_str(), &entrystat ) != 0 ) 
 			std::cout << "Error getting file details" << std::endl; 
 
-		if( S_ISREG( entrystat.st_mode ) ) {
+	
+/*		if( S_ISREG( entrystat.st_mode ) ) {
 			files.push_back(path + "/" + entry->d_name); 	
-		} 
+		} */
 
 		if( entry->d_type & DT_DIR ) {
 
 			if( strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0 ) {
 
-				std::cout << "Opening directory " << entry->d_name << std::endl;
+				// Is this an entry directory
+				if( boost::regex_match(entry->d_name, boost::regex("([0-9]*)")) ) {
+					files.push_back(path + "/" + entry->d_name); 	
+				} else {				
 
-				// Is a directory
-				directory_list(files, path + "/" + entry->d_name);
+					std::cout << "Opening directory " << entry->d_name << std::endl;
+
+					// Is a directory
+					directory_list(files, path + "/" + entry->d_name);
+
+				}
 
 			}
 
@@ -110,6 +191,17 @@ void directory_list(std::vector<std::string>& files, std::string path) {
 
 	closedir(dp); 
 
+}
+
+
+// Make a directory if it does not exist
+void make_directory(std::string path) {
+
+	struct stat st = {0}; 
+
+	if( stat(path.c_str(), &st ) == -1 )
+		mkdir(path.c_str(), 0700); 
+	
 }
 
 

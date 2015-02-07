@@ -24,6 +24,8 @@ void Segmenter_Manual::segment(cv::Mat& img, std::vector<candidate>& candidates,
 
 	// Loop through positives
 	for (std::vector<cv::Rect>::iterator it = bounding_positive.begin(); it != bounding_positive.end(); it++, i++) {
+	
+		std::cout << "Creating candidate" << std::endl;
 
 		// Create candidate
 		candidate cand(it->x/ALPHA, it->y/ALPHA, 0, i);
@@ -55,18 +57,35 @@ void Segmenter_Manual::create_candidate_image(cv::Mat& depth_img, cv::Mat& cand_
 	
 		// Scaled dimensions
 		cv::Size dims = cv::Size(floor(region.width * scaling), floor(region.height * scaling)); 
+		
+		//std::cout << "Scaled candidate - width: " << dims.width << " height: " << dims.height << std::endl;
 
-		cand_img = cv::Mat(cv::Size(CANDIDATE_WIDTH, CANDIDATE_HEIGHT), CV_32FC1);
+		cand_img = cv::Mat::zeros(cv::Size(CANDIDATE_WIDTH, CANDIDATE_HEIGHT), CV_32FC1);
 
 		cv::Point image_centre = cv::Point((CANDIDATE_WIDTH)/2, (CANDIDATE_HEIGHT)/2);
 		cv::Point start = image_centre - cv::Point(dims.width/2, dims.height/2);
 
+		//std::cout << "Centre: (" << image_centre.x << "," << image_centre.y << ")" << std::endl;
+		//std::cout << "Start: (" << start.x << "," << start.y << ")" << std::endl;
+
+		std::cout << "Filling candidate window" << std::endl;
+
 		// Center the scaled candidate in the candidate window
 		for(int x = 0; x < dims.width; x++){
 			for(int y = 0; y < dims.height; y++){
+
+				cv::Point src(region.x + x/scaling, region.y + y/scaling); 
+				cv::Point dest(start+cv::Point(x,y)); 
+
+					std::cout << "Copying (" << src.x << "," << src.y << ") to (" << dest.x << "," << dest.y << ")" << std::endl;
+
 				cand_img.at<float>(start+cv::Point(x,y)) = depth_img.at<float>(cv::Point(region.x + x/scaling, region.y + y/scaling));
+
+			
 			}
 		}
+
+		std::cout << "Filled" << std::endl;
 
 }
 
