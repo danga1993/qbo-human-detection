@@ -14,15 +14,43 @@
 #include "config.h"
 
 
+// Loads features from given file and adds to training vector
+void load_features(std::string path, int label, FeatureVector * features, std::vector<int> feature_ids, cv::Mat& train_features, cv::Mat& train_labels) {
+
+		cv::Mat img; 
+		cv::Mat cand_features; 
+
+		// Load depth image
+		image_read(path + "/depth.png", img); 
+
+		std::cout << "Loading " << path << std::endl;
+
+		// Generate candidate from stored file (Note: candidate missing many fields)
+		candidate cand(img, label); 
+
+		// Pass candidate to feature extractor
+		features->set_candidate(cand);  
+
+		// Extract the features
+		features->getfeatures(feature_ids, cand_features);
+	
+		// Add onto the main vector
+		train_features.push_back(cand_features);
+
+		// Add to labels
+		train_labels.push_back((float)label); 
+
+}
+
+
 int main(int argc, char** argv)
 {
 
 	// File for loading
-	cv::FileStorage file;
 	std::vector<std::string> files; 
 
 	FeatureVector * features; 
-	cv::Mat cand_features; 
+
 	cv::Mat train_features; 
 	cv::Mat train_labels; 
 
@@ -45,38 +73,24 @@ int main(int argc, char** argv)
 	}
 
 	// Get list of files
-	directory_list(files, "train_data"); 
+	directory_list(files, "train_data/positive"); 
 
 	// Loop through 
 	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); it++) {
 
-		file.open(*it, cv::FileStorage::READ); 
-		if( !file.isOpened() )
-			{ std::cout << "Failed to open file " << *it << std::endl; exit(1); }
+		// Load the features from candidate into the training vector
+		load_features(*it, 1, features, feature_ids, train_features, train_labels); 
 
-		// Read data out of candidate
-		file["image"] >> img; 
-		file["human"] >> human;
+	}
 
-		file.release();
+	// Get list of files
+	directory_list(files, "train_data/negative"); 
 
-		// Generate candidate from stored file (Note: candidate missing many fields)
-		candidate cand(img, human); 
+	// Loop through 
+	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); it++) {
 
-		// Pass candidate to feature extractor
-		features->set_candidate(cand);  
-
-		// Extract the features
-		features->getfeatures(feature_ids, cand_features);
-	
-		// Add onto the main vector
-		train_features.push_back(cand_features);
-
-		// Add to labels
-		train_labels.push_back((float)cand.human); 
-
-		//std::cout << "Actual: " << train_features.size() << std::endl;
-		//std::cout << "Theory: " << features->getLength() << std::endl;
+		// Load the features from candidate into the training vector
+		load_features(*it, 0, features, feature_ids, train_features, train_labels); 
 
 	}
 

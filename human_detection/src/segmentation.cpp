@@ -97,8 +97,8 @@ int main(int argc, char** argv)
 
 				make_directory(fname.str()); 
 				
-		displayImg(it->im); 
-		cv::waitKey();
+			/*displayImg(it->im); 
+				cv::waitKey(); */
 
 				image_write(fname.str() + "/depth.png", it->im);  
 

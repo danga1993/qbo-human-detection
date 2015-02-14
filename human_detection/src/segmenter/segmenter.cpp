@@ -68,7 +68,7 @@ void Segmenter_Manual::create_candidate_image(cv::Mat& depth_img, cv::Mat& cand_
 		//std::cout << "Centre: (" << image_centre.x << "," << image_centre.y << ")" << std::endl;
 		//std::cout << "Start: (" << start.x << "," << start.y << ")" << std::endl;
 
-		std::cout << "Filling candidate window" << std::endl;
+		//std::cout << "Filling candidate window" << std::endl;
 
 		// Center the scaled candidate in the candidate window
 		for(int x = 0; x < dims.width; x++){
@@ -77,7 +77,7 @@ void Segmenter_Manual::create_candidate_image(cv::Mat& depth_img, cv::Mat& cand_
 				cv::Point src(region.x + x/scaling, region.y + y/scaling); 
 				cv::Point dest(start+cv::Point(x,y)); 
 
-					std::cout << "Copying (" << src.x << "," << src.y << ") to (" << dest.x << "," << dest.y << ")" << std::endl;
+					//std::cout << "Copying (" << src.x << "," << src.y << ") to (" << dest.x << "," << dest.y << ")" << std::endl;
 
 				cand_img.at<float>(start+cv::Point(x,y)) = depth_img.at<float>(cv::Point(region.x + x/scaling, region.y + y/scaling));
 
@@ -85,7 +85,7 @@ void Segmenter_Manual::create_candidate_image(cv::Mat& depth_img, cv::Mat& cand_
 			}
 		}
 
-		std::cout << "Filled" << std::endl;
+		//std::cout << "Filled" << std::endl;
 
 }
 

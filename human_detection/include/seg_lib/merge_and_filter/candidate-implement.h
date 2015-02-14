@@ -215,6 +215,49 @@ void candidate::create_candidate_image(cv::Mat &depthim){
 }
 
 
+// Positions a candidate image inside the candidate window
+void position_candidate_image(cv::Mat& cand_window, cv::Mat& cand_image) {
+
+	cand_window = cv::Mat(cv::Size(CANDIDATE_WIDTH, CANDIDATE_HEIGHT), CV_32FC1, 0.0/0.0);
+	cv::Size dims = cand_image.size(); 
+
+	// Scale and fit the candidate image into the window
+	if( CANDIDATE_IMAGE_SCALE ) {
+
+		// Calculate scaling factors
+		float scale_x = CANDIDATE_WIDTH / dims.width; 
+		float scale_y = CANDIDATE_HEIGHT / dims.height; 
+
+		// Loop through and fill in candidate
+		for( int x = 0; x < CANDIDATE_WIDTH; x++ ) {
+			for( int y = 0; y < CANDIDATE_HEIGHT; y++ ) {
+
+				cand_window.at<float>(x, y) = cand_image.at<float>(x/scale_x, y/scale_y); 
+
+			}
+		}
+
+	} else {
+
+		cv::Point image_centre = cv::Point((CANDIDATE_WIDTH)/2, (CANDIDATE_HEIGHT)/2);
+		cv::Point start = image_centre - cv::Point(dims.width/2, dims.height/2);
+
+		for(int x = 0; x < dims.width; x++){
+			for(int y = 0; y < dims.height; y++){
+				cand_window.at<float>(start+cv::Point(x,y)) = cand_image.at<float>(cv::Point(x,y));
+			}
+		}
+
+	}
+
+}
+
+
+		
+
+
+
+
 bool candidate::merge(candidate c){
 	//note that c should be of a larger size than this
 	if( c.size() > size() ){

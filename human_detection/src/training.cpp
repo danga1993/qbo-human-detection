@@ -56,7 +56,7 @@ void training_collect::imageCallback(const sensor_msgs::ImageConstPtr& depth_ima
 
 	current_time = ros::Time::now(); 
 
-	if( current_time - prev_run > ros::Duration(5.0) ) {
+	if( current_time - prev_run > ros::Duration(0.5) ) {
 
 		prev_run = current_time; 
 

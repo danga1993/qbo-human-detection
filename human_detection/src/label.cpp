@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdio.h>
+#include <sys/stat.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -29,6 +30,11 @@ int main(int argc, char** argv)
 
 	// Loop through 
 	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); it++) {
+
+		struct stat entrystat; 
+
+		if(stat((*it + "/data.mat").c_str(), &entrystat) == 0)
+			continue; 
 
 		image_read(*it + "/depth.png", img); 
 		
