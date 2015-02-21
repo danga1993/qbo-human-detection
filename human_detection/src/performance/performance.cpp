@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/ml/ml.hpp>
@@ -12,6 +13,9 @@
 #include "feature/featurevector.h"
 #include "segmenter/segmenter.h"
 #include "performance/performance.h"
+
+// Boost filesystem namespace
+namespace fs = boost::filesystem;
 
 
 // Initialize the performance class 
@@ -62,7 +66,7 @@ Performance_Auto::Performance_Auto(FeatureVector * features_input, std::string b
 
 	
 // Perform automatic segmentation and tagging using bounding boxes
-void Performance_Auto::measure(int& true_positives, int& false_positives, int& actual_positives, std::string frame_dir) {
+void Performance_Auto::measure(int& true_positives, int& false_positives, int& actual_positives, std::string frame_dir, std::string mis_dir) {
 		
 		// Bounding boxes
 		std::vector<cv::Rect> bounding_boxes; 
@@ -166,62 +170,75 @@ Performance_Manual::Performance_Manual(FeatureVector * features_input, std::stri
 	Performance(features_input, boost_data) { }
 
 // Asses performance with manually segmented candidate
-void Performance_Manual::measure(int& true_positives, int& false_positives, int& actual_positives, int& actual_negatives, std::string candidate_dir) {
+void Performance_Manual::measure(int& true_positives, int& false_positives, int& actual_positives, int& actual_negatives, std::string candidate_dir, std::string mis_dir) {
 
 	// File for loading
 	std::vector<std::string> files; 
-	cv::FileStorage file;
-
-	// Candidate data
-	cv::Mat img; 
-	int human; 
-	cv::Mat cand_features; 
 
 	// Features to extract from candidate
 	std::vector<int> feature_ids;	
 	
-	// Get list of files
-	directory_list(files, candidate_dir); 
+	// Get list of positives
+	directory_list(files, candidate_dir + "/positive"); 
 
-	std::cout << "Found " << files.size() << " files" << std::endl;
+	std::cout << "Found positives" << files.size() << std::endl;
+
+	classify_candidates(true_positives, actual_positives, files, 1, mis_dir); 
+
+	// Get list of negatives
+	directory_list(files, candidate_dir + "/negative"); 
+
+	std::cout << "Found negatives" << files.size() << std::endl;
+
+	classify_candidates(false_positives, actual_negatives, files, 0, mis_dir); 
+
+}
+
+
+// Calculate number of positives from list of candidates
+void Performance_Manual::classify_candidates(int& positives, int& total, std::vector<std::string> files, int human, std::string mis_dir) {
+
+	cv::FileStorage file;
+	cv::Mat img; 
+
+	positives = 0;
+	total = 0; 
 
 	// Loop through 
-	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); it++) {
+	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); it++, total++) {
 
-	  file.open(*it, cv::FileStorage::READ); 
-		if( !file.isOpened() )
-			{ std::cout << "Failed to open file " << *it << std::endl; exit(1); }
-
-		// Read data out of candidate
-		file["image"] >> img; 
-		file["human"] >> human;
-
-		file.release();
+		// Read in image
+		image_read(*it + "/depth.png", img); 	
 
 		// Generate candidate from stored file (Note: candidate missing many fields)
-		candidate cand(img, human); 
+		candidate cand(img, 0); 
 
 		// Classify candidate
 		classify_candidate(cand); 
 
-		// Add classification to statistics
-		if( cand.human ) {
-			actual_positives++; 
+		positives += (cand.classification) ? 1 : 0; 
 
-			if( cand.classification ) 
-				true_positives++; 
-		
-		} else {
-			actual_negatives++; 
+		// Store incorrectly classified candidates
+		if( cand.classification != human ) {
+			
+			if( mis_dir != "" ) {
 
-			if( cand.classification ) 
-				false_positives++; 
+				fs::path cand_dir(*it); 
+
+				copy_dir(cand_dir, (mis_dir + (human ? "/positive" : "/negative")) / cand_dir.filename() ); 
+
+			}
 
 		}
 
 	}
-				
+
 }
+
+
+	
+
+
 
 
 

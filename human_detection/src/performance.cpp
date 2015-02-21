@@ -45,18 +45,19 @@ int main(int argc, char** argv)
 
 	// Measure performance
 	if( SEGMENT_AUTO ) {
-		perform_auto.measure(true_positives, false_positives, actual_positives, "test_frames"); 
+		perform_auto.measure(true_positives, false_positives, actual_positives, "test_frames", TEST_MIS_DIR); 
 	} else {
-		perform_manual.measure(true_positives, false_positives, actual_positives, actual_negatives, "test_candidates"); 
+		perform_manual.measure(true_positives, false_positives, actual_positives, actual_negatives, "test_data", TEST_MIS_DIR); 
 	}
 
 	// Compile statistics
-	std::cout << "Precision: " << (true_positives / (true_positives + false_positives));
-	std::cout << " Recall: " << (true_positives / actual_positives) << std::endl;
+	std::cout << "Precision: " << ((float)true_positives / (true_positives + false_positives));
+	std::cout << " Recall: " << ((float)true_positives / actual_positives) << std::endl;
 
 	std::cout << "True positives: " << true_positives; 
 	std::cout << " False positives: " << false_positives; 
 	std::cout << " Actual positives: " << actual_positives; 
+	std::cout << " Actual negatives: " << actual_negatives; 
 		
 }
 

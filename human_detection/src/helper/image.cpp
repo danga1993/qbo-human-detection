@@ -5,6 +5,7 @@
 #include <dirent.h>
 
 #include <boost/regex.hpp>
+#include <boost/filesystem.hpp>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -15,6 +16,8 @@
 #include "seg_lib/segment_depth/segment.h"
 
 #include "helper/image.h"
+
+namespace fs = boost::filesystem;
 
 // Displays an image using OpenCV and waits for user
 void displayImg(cv::Mat& img, std::string window_name)
@@ -144,11 +147,15 @@ void image_read(std::string filename, cv::Mat& img) {
 
 
 // List the files in a directory
-void directory_list(std::vector<std::string>& files, std::string path) {
+void directory_list(std::vector<std::string>& files, std::string path, int initial_call) {
 
 	struct dirent *entry; 
 	DIR *dp; 
 	struct stat entrystat;
+
+	// Clear file vector
+	if( initial_call )
+		files.clear(); 
 
 	dp = opendir(path.c_str()); 
 
@@ -172,14 +179,14 @@ void directory_list(std::vector<std::string>& files, std::string path) {
 			if( strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0 ) {
 
 				// Is this an entry directory
-				if( boost::regex_match(entry->d_name, boost::regex("([0-9]*)")) ) {
+				if( boost::regex_match(entry->d_name, boost::regex("([0-9]*[m]?)")) ) {
 					files.push_back(path + "/" + entry->d_name); 	
 				} else {				
 
 					std::cout << "Opening directory " << entry->d_name << std::endl;
 
 					// Is a directory
-					directory_list(files, path + "/" + entry->d_name);
+					directory_list(files, path + "/" + entry->d_name, false);
 
 				}
 
@@ -203,6 +210,94 @@ void make_directory(std::string path) {
 		mkdir(path.c_str(), 0700); 
 	
 }
+
+// Cleans a directory
+void clean_directory(std::string dir) { 
+
+	// Delete folder
+	fs::remove_all(dir);
+
+	// Recreate
+	make_directory(dir); 
+
+} 
+
+// Copies a directory
+bool copy_dir(boost::filesystem::path const & source, boost::filesystem::path const & destination) {
+
+    try
+    {
+        // Check whether the function call is valid
+        if(
+            !fs::exists(source) ||
+            !fs::is_directory(source)
+        )
+        {
+            std::cerr << "Source directory " << source.string()
+                << " does not exist or is not a directory." << '\n'
+            ;
+            return false;
+        }
+        if(fs::exists(destination))
+        {
+            std::cerr << "Destination directory " << destination.string()
+                << " already exists." << '\n'
+            ;
+            return false;
+        }
+        // Create the destination directory
+        if(!fs::create_directory(destination))
+        {
+            std::cerr << "Unable to create destination directory"
+                << destination.string() << '\n'
+            ;
+            return false;
+        }
+    }
+    catch(fs::filesystem_error const & e)
+    {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+    // Iterate through the source directory
+    for(
+        fs::directory_iterator file(source);
+        file != fs::directory_iterator(); ++file
+    )
+    {
+        try
+        {
+            fs::path current(file->path());
+            if(fs::is_directory(current))
+            {
+                // Found directory: Recursion
+                if(
+                    !copy_dir(
+                        current,
+                        destination / current.filename()
+                    )
+                )
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Found file: Copy
+                fs::copy_file(
+                    current,
+                    destination / current.filename()
+                );
+            }
+        }
+        catch(fs::filesystem_error const & e)
+        {
+            std:: cerr << e.what() << '\n';
+        }
+    }
+    return true;
+}
+
 
 
 

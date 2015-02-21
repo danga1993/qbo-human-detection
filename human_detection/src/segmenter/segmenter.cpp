@@ -29,7 +29,7 @@ void Segmenter_Manual::segment(cv::Mat& img, std::vector<candidate>& candidates,
 
 		// Create candidate
 		candidate cand(it->x/ALPHA, it->y/ALPHA, 0, i);
-		create_candidate_image(img, cand.im, *it); 
+		cand.create_candidate_image(img, *it); 
 		cand.human = true; 
 		candidates.push_back(cand); 
 
@@ -40,7 +40,7 @@ void Segmenter_Manual::segment(cv::Mat& img, std::vector<candidate>& candidates,
 
 		// Create candidate
 		candidate cand(it->x/ALPHA, it->y/ALPHA, 0, i);
-		create_candidate_image(img, cand.im, *it); 
+		cand.create_candidate_image(img, *it); 
 		cand.human = false; 
 		candidates.push_back(cand); 
 
@@ -48,46 +48,6 @@ void Segmenter_Manual::segment(cv::Mat& img, std::vector<candidate>& candidates,
 
 }
 
-
-// Scales a rectangular region to fit candidate window
-void Segmenter_Manual::create_candidate_image(cv::Mat& depth_img, cv::Mat& cand_img, cv::Rect& region) {
-
-		// Generate candidate image (NOTE: Using section from built in create_candidate_image function)
-		float scaling = std::min((float)CANDIDATE_WIDTH/(region.width), (float)CANDIDATE_HEIGHT/(region.height));
-	
-		// Scaled dimensions
-		cv::Size dims = cv::Size(floor(region.width * scaling), floor(region.height * scaling)); 
-		
-		//std::cout << "Scaled candidate - width: " << dims.width << " height: " << dims.height << std::endl;
-
-		cand_img = cv::Mat::zeros(cv::Size(CANDIDATE_WIDTH, CANDIDATE_HEIGHT), CV_32FC1);
-
-		cv::Point image_centre = cv::Point((CANDIDATE_WIDTH)/2, (CANDIDATE_HEIGHT)/2);
-		cv::Point start = image_centre - cv::Point(dims.width/2, dims.height/2);
-
-		//std::cout << "Centre: (" << image_centre.x << "," << image_centre.y << ")" << std::endl;
-		//std::cout << "Start: (" << start.x << "," << start.y << ")" << std::endl;
-
-		//std::cout << "Filling candidate window" << std::endl;
-
-		// Center the scaled candidate in the candidate window
-		for(int x = 0; x < dims.width; x++){
-			for(int y = 0; y < dims.height; y++){
-
-				cv::Point src(region.x + x/scaling, region.y + y/scaling); 
-				cv::Point dest(start+cv::Point(x,y)); 
-
-					//std::cout << "Copying (" << src.x << "," << src.y << ") to (" << dest.x << "," << dest.y << ")" << std::endl;
-
-				cand_img.at<float>(start+cv::Point(x,y)) = depth_img.at<float>(cv::Point(region.x + x/scaling, region.y + y/scaling));
-
-			
-			}
-		}
-
-		//std::cout << "Filled" << std::endl;
-
-}
 
 // Segments the image using graph-based segmentation algorithm
 void Segmenter_Auto::segment(cv::Mat& img, std::vector<candidate>& candidates)

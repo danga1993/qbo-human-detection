@@ -107,6 +107,8 @@
 #define SEGTEST "seg_test"
 #define TIMETEST "timings"
 
+#define TEST_MIS_DIR "test_misses"
+
 //training params
 #define CAND_OVRLP_TRUE 0.4
 
@@ -136,6 +138,8 @@
 #define RECT_CELL_SIZE 8
 #define RECT_MAX_DIM 8
 
+#define CANDIDATE_IMAGE_SCALE true
+
 // Segmentation 
 #define SEGMENT_AUTO false
 
@@ -148,7 +152,7 @@
 #define FEATURE_RDSF 0
 #define FEATURE_HOG 1
 
-#define FEATURE_VECTOR FEATURE_RDSF
+#define FEATURE_VECTOR FEATURE_HOG
 
 // Classification
 #define BOOST_THRESHOLD 0

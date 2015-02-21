@@ -47,6 +47,8 @@ class candidate {
 		void add(int x, int y, float z);
 		void set_boundingBox();
 		void create_candidate_image(cv::Mat &depthim);
+		void create_candidate_image(cv::Mat &depthim, cv::Rect& region);
+		void position_candidate_image(cv::Mat& cand_window, cv::Mat& cand_image); 
 		bool merge(candidate c);
 		void calc_centre();
 		int size() const;

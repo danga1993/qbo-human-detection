@@ -21,9 +21,6 @@ class Segmenter_Manual : public Segmenter
 	public: 
 		static void segment(cv::Mat& img, std::vector<candidate>& candidates, std::vector<cv::Rect> bounding_positive, std::vector<cv::Rect> bounding_negative);
 
-	private: 
-		static void create_candidate_image(cv::Mat& depth_img, cv::Mat& cand_img, cv::Rect& region);
-
 };
 
 		

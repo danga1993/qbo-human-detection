@@ -120,5 +120,8 @@ target_link_libraries(train ${catkin_LIBRARIES})
 add_executable(label src/label.cpp src/labeller/labeller.cpp src/helper/image.cpp)
 target_link_libraries(label ${catkin_LIBRARIES})
 
+add_executable(canpulate src/canpulate.cpp src/helper/image.cpp)
+target_link_libraries(canpulate ${catkin_LIBRARIES})
+
 add_executable(human_detection src/human_detection.cpp)
 target_link_libraries(human_detection ${catkin_LIBRARIES})
