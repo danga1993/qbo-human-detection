@@ -53,7 +53,8 @@ void Tagger::tag(std::vector<candidate>& candidates, std::vector<cv::Rect>& boun
 
 		}
 	
-		std::cout << "Candidate is human: " << candidate->human << std::endl;
+		if( candidate->human ) 
+			std::cout << "Candidate is human: " << candidate->human << std::endl;
 
 		// Show candidate
 		//displayImg(candidate->im, "CANDIDATES");

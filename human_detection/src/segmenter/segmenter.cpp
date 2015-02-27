@@ -56,6 +56,8 @@ void Segmenter_Auto::segment(cv::Mat& img, std::vector<candidate>& candidates)
 	float sigma = SIGMA;
 	float kdepth = KDEPTH;
 	float knormal = KNORMAL;
+	float depth_penalty = DEPTH_SIZE_PENALTY; 
+	float normal_penalty = NORMAL_SIZE_PENALTY; 
 	int min_size = MIN_SIZE;
 	int num_ccs = 0;
 
@@ -71,13 +73,19 @@ void Segmenter_Auto::segment(cv::Mat& img, std::vector<candidate>& candidates)
 	image<rgb>* depthseg;
 	image<rgb>* normalseg;
 	image<rgb>* jointseg;
+	cv::Mat normaldiff_img; 
 
-	universe* u_segmented = segment_image1C(sub_img, sigma, kdepth, knormal, min_size, &num_ccs, &normal_img, &depthseg, &normalseg, &jointseg);
+	universe* u_segmented = segment_image1C(sub_img, sigma, kdepth, knormal, depth_penalty, normal_penalty, min_size, &num_ccs, &normal_img, &depthseg, &normalseg, normaldiff_img, &jointseg);
 
+	//display_felzen(depthseg); 
+	//display_felzen(normalseg); 
 	//display_felzen(jointseg); 
 
 	// merge regions
 	merge_and_filter(sub_img, u_segmented, sub_img->width(), sub_img->height(), img, candidates);
+
+	//display_candidates(sub_img->width(), sub_img->height(), candidates); 
+	//cv::waitKey();
 
 	// Free all dynamic memory (not great C++)
 	delete normal_img;

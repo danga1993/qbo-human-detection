@@ -327,7 +327,7 @@ typedef struct {
 } edge;
 
 // threshold function
-#define THRESHOLD(size, c) (c/size)
+//#define THRESHOLD(size, c) (c/size)
 
 universe *segment_graph(int num_vertices, int num_edges, edge *edges, float c);
 

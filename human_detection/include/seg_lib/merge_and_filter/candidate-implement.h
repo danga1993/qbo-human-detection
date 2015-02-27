@@ -1,5 +1,6 @@
 #include "candidate.h"
 #include "helper/image.h"
+#include "candidate-visualize.h"
 
 void showImg(cv::Mat& img)
 {
@@ -42,15 +43,18 @@ inline bool operator>=(const candidate& lhs, const candidate& rhs){
 	return !operator<(lhs,rhs);
 }
 
-float candidate::calc_real_distance(float depth, int pel_from_lower_left, int length, float fov){
+void candidate::calc_real_coords(float depth, int x, int y, float& real_x, float& real_y) {
 	
 	//float pel_ratio = (float)pel/(length - 1.0);
 	//float angular_component = tan(fov/2);
 	//return depth*(pel_ratio - 0.5)*angular_component*2; //I think there should be an extra factor of 2 in this term
 
-	float pel_ratio = float(pel_from_lower_left)/length;
-	float metric_scene_length = depth*2*tan(fov/2);
-	return pel_ratio*metric_scene_length;	
+	real_x = ((float)x/(FRAME_WIDTH-1) - 0.5) * tan(FOV_H/2) * 2 * depth; 
+	real_y = ((float)y/(FRAME_HEIGHT-1) - 0.5) * tan(FOV_V/2) * 2 * depth; 
+
+	//float pel_ratio = float(pel_from_lower_left)/length;
+	//float metric_scene_length = depth*2*tan(fov/2);
+	//return pel_ratio*metric_scene_length;	
 }
 
 candidate::candidate(int x,int y, float z, int i){
@@ -113,18 +117,19 @@ int candidate::size() const{
 }
 
 void candidate::calc_real_dims(){
-	float xleft = calc_real_distance(centre.z, xmin, PEL_WIDTH/ALPHA, F_H*3.141592653589793/180);
-	float xright = calc_real_distance(centre.z, xmax, PEL_WIDTH/ALPHA, F_H*3.141592653589793/180);
-	//float ybottom = calc_real_distance(centre.z, (PEL_HEIGHT/(2*ALPHA) - ymax), PEL_HEIGHT/ALPHA, F_V*3.141592653589793/180);
-	//float ytop = calc_real_distance(centre.z, (PEL_HEIGHT/(2*ALPHA) - ymin), PEL_HEIGHT/ALPHA, F_V*3.141592653589793/180);
-	float ybottom = calc_real_distance(centre.z, (PEL_HEIGHT/ALPHA - ymax), PEL_HEIGHT/ALPHA, F_V*3.141592653589793/180);
-	float ytop = calc_real_distance(centre.z, (PEL_HEIGHT/ALPHA - ymin), PEL_HEIGHT/ALPHA, F_V*3.141592653589793/180);
 
-	real_height = ytop - ybottom;
+	float xleft, ytop, xright, ybottom; 
+
+	calc_real_coords(centre.z, xmin*ALPHA, ymin*ALPHA, xleft, ytop);
+	calc_real_coords(centre.z, xmax*ALPHA, ymax*ALPHA, xright, ybottom);
+
+	real_height = ybottom - ytop;
 	real_width = xright - xleft;
+
 	/*std::cout << "Xmin: " << xmin << ", xmax: " << xmax << ", ymin: " << ymin << ", ymax: " << ymax <<std::endl;
 	std::cout << "Depth: " << centre.z << " Xleft: " << xleft << ", xright: " << xright << ", ytop: " << ytop << ", ybottom: " << ybottom <<std::endl;*/
 	//std::cout << "Candidate: " << id << ", real_height: " << real_height << ", real_width: " << real_width << std::endl;
+
 }
 	
 void candidate::create_candidate_image(cv::Mat &depthim){
@@ -145,7 +150,7 @@ void candidate::create_candidate_image(cv::Mat &depthim){
 	}
 
 	// Original scale candidate image
-	cv::Mat nscm = cv::Mat(cv::Size(width*ALPHA, height*ALPHA), CV_32FC1, 0.0); 
+	cv::Mat nscm = cv::Mat(cv::Size(width*ALPHA, height*ALPHA), CV_32FC1, 0.0); //New Scale Candidate Mask
 
 	//std::cout << "Scaling: " << scaling << ", new: width = " << nscm.size().width << ", height = " << nscm.size().height << std::endl; 
 
@@ -277,93 +282,100 @@ bool candidate::merge(candidate c){
 }*/
 void candidate::RANSAC_inliers(){
 
-	//find real points of each pel
-	std::vector<cv::Point3f> realpts;
-	std::vector<cv::Point3f>::iterator it1;
-	for( it1 = pts.begin(); it1 != pts.end(); it1++){
- 		float rx = calc_real_distance(it1->z, it1->x, PEL_WIDTH/ALPHA, F_H*3.141592653589793/180);
-		float ry = calc_real_distance(it1->z, (PEL_HEIGHT/(2*ALPHA) - it1->y), PEL_HEIGHT/ALPHA, F_V*3.141592653589793/180);
-		float rz = it1->z;
-		//std::cout << "Realpt (" << rx << "," << ry << "," << rz << ")";
-		//std::cout << " from pt: (" << it1->x << "," << it1->y << "," << it1->z << ")" <<std::endl;
-		realpts.push_back(cv::Point3f(rx,ry,rz));
+	// 3 points needed to define a plane
+	if( size() > 3 ) {
+
+		//find real points of each pel
+		std::vector<cv::Point3f> realpts;
+		std::vector<cv::Point3f>::iterator it1;
+		for( it1 = pts.begin(); it1 != pts.end(); it1++){
+			float rx, ry;
+	 		calc_real_coords(it1->z, it1->x*ALPHA, it1->y*ALPHA, rx, ry);
+			float rz = it1->z;
+			//std::cout << "Realpt (" << rx << "," << ry << "," << rz << ")";
+			//std::cout << " from pt: (" << it1->x << "," << it1->y << "," << it1->z << ")" <<std::endl;
+			realpts.push_back(cv::Point3f(rx,ry,rz));
+		}
+
+		//initialise random seed
+		srand (time(NULL));
+
+		//loop through each iteration
+		cv::Point3f p0;
+		cv::Point3f p1;
+		cv::Point3f p2;
+		cv::Point3f p1p0;
+		cv::Point3f p2p0;
+		cv::Point3f pnormal;
+
+		for(int k = 0; k < RANSACK; k++){		
+			//randomly choose 3 pixels in candidate
+			int inliers = 0;
+			bool print = false;
+
+			int p0_index = rand() % size();
+			p0 = realpts.at(p0_index);
+		
+			int p1_index = rand() % size();
+			while((p1_index == p0_index)){
+				p1_index = rand() % size(); //ensure that p1_index isnt equal to p0_index
+			}
+			p1 = realpts.at(p1_index);
+
+			int p2_index = rand() % size();
+			bool tryagain = true;
+			while(tryagain){
+				tryagain = false;
+				p2_index = rand() % size(); //ensure that p2_index isnt equal to p0_index or p1_index
+				if(p2_index == p1_index) tryagain = true;
+				if(p2_index == p0_index) tryagain = true;
+			}
+			p2 = realpts.at(p2_index);
+
+			//compute vectors in plane
+			p1p0 = p1-p0;
+			p2p0 = p2-p0;
+
+			//compute plane normal
+			pnormal = p1p0.cross(p2p0);
+			float L2norm = norm(pnormal);
+			if( L2norm !=0 ){
+				pnormal = pnormal * (1/L2norm);
+				float offset = -p0.dot(pnormal);
+				if(isnan(pnormal.x)){
+					print = true;
+				}
+
+				//now count how many inliers
+				for( std::vector<cv::Point3f>::iterator it = realpts.begin(); it != realpts.end(); it++){
+					float d = std::abs(pnormal.dot(*it) + offset);
+					//std::cout << "Point: (" << it->x << "," << it->y << "," << it->z << "), distance: " << d << std::endl;
+					if(d < EPSILON){
+						inliers++;
+					}
+				}
+				///*
+				if(print){
+					std::cout << "P0 = (" << p0.x << "," << p0.y << "," << p0.z << ") "<< std::endl;
+					std::cout << "P1 = (" << p1.x << "," << p1.y << "," << p1.z << ") "<< std::endl;
+					std::cout << "P2 = (" << p2.x << "," << p2.y << "," << p2.z << ") "<< std::endl;
+					std::cout << "Plane = (" << pnormal.x << "," << pnormal.y << "," << pnormal.z << "," << offset << ") "<< std::endl;
+					std::cout << "NaN's found in Candidate: " << id << " of size: " << size() << std::endl;
+				}
+				/*
+				std::cout << "Plane = (" << pnormal.x << "," << pnormal.y << "," << pnormal.z << "," << offset << ") "<< std::endl;
+				std::cout << "Candidate " << id << " size:  " << size() << std::endl;
+				std::cout << "Candidate " << id << " inliers:  " << inliers << std::endl;
+				//*/
+				//and update max_inliers
+				max_inlier_fraction = std::max(float(inliers)/size(), max_inlier_fraction);
+			}
+		} 
+
+	} else {
+		max_inlier_fraction = 1.0; 
 	}
 
-	//initialise random seed
-	srand (time(NULL));
-
-	//loop through each iteration
-	cv::Point3f p0;
-	cv::Point3f p1;
-	cv::Point3f p2;
-	cv::Point3f p1p0;
-	cv::Point3f p2p0;
-	cv::Point3f pnormal;
-
-	for(int k = 0; k < RANSACK; k++){		
-		//randomly choose 3 pixels in candidate
-		int inliers = 0;
-		bool print = false;
-
-		int p0_index = rand() % size();
-		p0 = realpts.at(p0_index);
-		
-		int p1_index = rand() % size();
-		while((p1_index == p0_index)){
-			p1_index = rand() % size(); //ensure that p1_index isnt equal to p0_index
-		}
-		p1 = realpts.at(p1_index);
-
-		int p2_index = rand() % size();
-		bool tryagain = true;
-		while(tryagain){
-			tryagain = false;
-			p2_index = rand() % size(); //ensure that p2_index isnt equal to p0_index or p1_index
-			if(p2_index == p1_index) tryagain = true;
-			if(p2_index == p0_index) tryagain = true;
-		}
-		p2 = realpts.at(p2_index);
-
-		//compute vectors in plane
-		p1p0 = p1-p0;
-		p2p0 = p2-p0;
-
-		//compute plane normal
-		pnormal = p1p0.cross(p2p0);
-		float L2norm = norm(pnormal);
-		if( L2norm !=0 ){
-			pnormal = pnormal * (1/L2norm);
-			float offset = -p0.dot(pnormal);
-			if(isnan(pnormal.x)){
-				print = true;
-			}
-
-			//now count how many inliers
-			for( std::vector<cv::Point3f>::iterator it = realpts.begin(); it != realpts.end(); it++){
-				float d = std::abs(pnormal.dot(*it) + offset);
-				//std::cout << "Point: (" << it->x << "," << it->y << "," << it->z << "), distance: " << d << std::endl;
-				if(d < EPSILON){
-					inliers++;
-				}
-			}
-			///*
-			if(print){
-				std::cout << "P0 = (" << p0.x << "," << p0.y << "," << p0.z << ") "<< std::endl;
-				std::cout << "P1 = (" << p1.x << "," << p1.y << "," << p1.z << ") "<< std::endl;
-				std::cout << "P2 = (" << p2.x << "," << p2.y << "," << p2.z << ") "<< std::endl;
-				std::cout << "Plane = (" << pnormal.x << "," << pnormal.y << "," << pnormal.z << "," << offset << ") "<< std::endl;
-				std::cout << "NaN's found in Candidate: " << id << " of size: " << size() << std::endl;
-			}
-			/*
-			std::cout << "Plane = (" << pnormal.x << "," << pnormal.y << "," << pnormal.z << "," << offset << ") "<< std::endl;
-			std::cout << "Candidate " << id << " size:  " << size() << std::endl;
-			std::cout << "Candidate " << id << " inliers:  " << inliers << std::endl;
-			//*/
-			//and update max_inliers
-			max_inlier_fraction = std::max(float(inliers)/size(), max_inlier_fraction);
-		}
-	} 
-	//std::cout << std::endl << "END OF CANDIDATE " << std::endl << std::endl << std::endl;
 }
 
 void candidate::calc_centre(){
@@ -374,8 +386,7 @@ void candidate::calc_centre(){
 	float depth = depth_accumulator/size();
 
 	//use true depth to convert real space location of candidate
-	centre.x = calc_real_distance(depth, midx, PEL_WIDTH/ALPHA, F_H*3.141592653589793/180);
-	centre.y = calc_real_distance(depth, PEL_HEIGHT/ALPHA - midy, PEL_HEIGHT/ALPHA, F_V*3.141592653589793/180);
+	calc_real_coords(depth, midx*ALPHA, midy*ALPHA, centre.x, centre.y);
 	centre.z = depth;
 
 	/*//for now let us just use pel values
@@ -386,6 +397,5 @@ void candidate::calc_centre(){
 	//std::cout<<"Candidate: " << id << ", MU = (" << centre.z << "," << centre.y << "," << centre.z << ")" << std::endl;
 	//std::cout << "xmin: " << xmin << ", xmax: " << xmax << ", ymin: " << ymin << ", ymax: " << ymax <<std::endl;
 	
-
 }
 

@@ -59,9 +59,15 @@ int main(int argc, char** argv)
 
 					Tagger::tag(candidates, bounding_positive); 
 
-
+					// Remove negative candidates from frame with positives
+					for (std::vector<candidate>::iterator it = candidates.begin(); it != candidates.end(); it++) {
+						if( !it->human && !it->erased ) {
+							it->erased = true; 
+						}
+					}
+			
 				} else {
-					std::cout << "No bounding box defined for candidate" << std::endl; 
+					//std::cout << "No bounding box defined for candidate" << std::endl; 
 				}
 
 			} else {
@@ -91,6 +97,8 @@ int main(int argc, char** argv)
 
 			if( !it->erased ) {
 
+        std::cout << "Saving candidate" << std::endl;
+	
 				// Generate filename
 				fname.str(""); 
 				fname << "candidates/" << ((it->human) ? "positive/" : "negative/") << i; 

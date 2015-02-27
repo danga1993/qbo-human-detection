@@ -25,12 +25,15 @@
 #define SIGMA 0.5
 #define ALPHA 8
 #define ESS 13
-#define KDEPTH 6
-#define KNORMAL 1.6
+#define KDEPTH 3
+#define KNORMAL 0.3   // 18
 #define MIN_SIZE 30
 #define CANDIDATE_WIDTH 64
 #define CANDIDATE_HEIGHT 128
 #define DILATING_SCALE 5
+
+#define NORMAL_SIZE_PENALTY 1  // 1.7
+#define DEPTH_SIZE_PENALTY 1
 
 //define system parameters
 /*#define SIGMA 0.5
@@ -45,11 +48,11 @@
 #define VALID_VALUE 0.000001
 #define CANDIDATE_MIN_WIDTH 0.3 //meters
 #define CANDIDATE_MAX_WIDTH 1.5 //meters
-#define CANDIDATE_MIN_HEIGHT 1.0 //meters
-#define CANDIDATE_MAX_HEIGHT 1.7 //meters
-#define CANDIDATE_MIN_DENSITY 0.2
-#define DELTAXZ 0.5
-#define DELTAY 1.0
+#define CANDIDATE_MIN_HEIGHT 1 //meters
+#define CANDIDATE_MAX_HEIGHT 2 //meters
+#define CANDIDATE_MIN_DENSITY 0.4
+#define DELTAXZ 0.3
+#define DELTAY 0.7
 
 /*
 //classification params
@@ -65,11 +68,11 @@
 */
 
 //candidate class params
-#define F_H 58//*3.141592653589793/180)
-#define F_V 45//*3.141592653589793/180)
+#define FOV_H 58 * 3.141592653589793/180
+#define FOV_V 45 * 3.141592653589793/180
 #define F_HPELS 580
-#define PEL_WIDTH 640
-#define PEL_HEIGHT 480
+#define FRAME_WIDTH 640
+#define FRAME_HEIGHT 480
 #define RANSACK 20
 #define EPSILON 0.1
 #define HEURISTIC_HEIGHT
@@ -141,7 +144,7 @@
 #define CANDIDATE_IMAGE_SCALE true
 
 // Segmentation 
-#define SEGMENT_AUTO false
+#define SEGMENT_AUTO true
 
 // HOG classification params
 #define HOG_CELL_SIZE 16

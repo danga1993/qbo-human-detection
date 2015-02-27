@@ -53,8 +53,33 @@ void displayImg(cv::Mat& img, std::string window_name)
 }
 
 
-// Display a Felzenimage
-void display_felzen(image<rgb> * img) {
+
+// Display a Felzenimage (RGB)
+void display_felzen( image<rgb> * img) {
+
+  cv::Mat img_disp(img->height(), img->width(), CV_32FC3); 
+
+	// Loop through and convert to matrix
+  int img_height = img->height(); 
+  int img_width = img->width(); 
+
+  for( int y = 0; y < img_height; y++ ) {
+    for( int x = 0; x < img_width; x++ ) {
+
+      img_disp.at<cv::Vec3f>(y, x)[0] = (float)imRef(img, x, y).b; 
+			img_disp.at<cv::Vec3f>(y, x)[1] = (float)imRef(img, x, y).g; 
+			img_disp.at<cv::Vec3f>(y, x)[2] = (float)imRef(img, x, y).r; 		
+
+    }
+  }
+
+  // Display
+  displayImg(img_disp); 
+
+}
+
+// Display a Felzenimage (float)
+void display_felzen( image<float> * img) {
 
   cv::Mat img_disp(img->height(), img->width(), CV_32FC1); 
 
@@ -65,7 +90,7 @@ void display_felzen(image<rgb> * img) {
   for( int y = 0; y < img_height; y++ ) {
     for( int x = 0; x < img_width; x++ ) {
 
-      img_disp.at<float>(y, x) = (float)imRef(img, x, y).r; 
+      img_disp.at<float>(y, x) = (float)imRef(img, x, y); 
 
     }
   }

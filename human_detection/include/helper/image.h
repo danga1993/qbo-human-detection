@@ -9,6 +9,7 @@ void displayImg(cv::Mat& img, std::string window_name = "");
 
 // Displays an image of class image (Felzenswalb)
 void display_felzen(image<rgb> * img);
+void display_felzen(image<float> * img);
 
 // Stores a Mat file image as a PNG
 void image_write(std::string filename, cv::Mat& img); 

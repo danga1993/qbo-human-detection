@@ -177,10 +177,14 @@ float anglediff(image<cv::Vec3f> *normals, int x1, int y1, int x2, int y2) {
 ******** 			 graph object				     ****************
 *********************************************************************/
 
-edge* create_normal_graph(image<cv::Vec3f> *normals, int *edgeNum){
+edge* create_normal_graph(image<cv::Vec3f> *normals, int *edgeNum, cv::Mat& normaldiff_img){
 	
 	int width = normals->width();
 	int height = normals->height();
+
+
+	// Create an image of normals
+	normaldiff_img = cv::Mat(height, width, CV_32FC1); 
 
    // build graph
   edge *edges = new edge[width*height*4];
@@ -192,6 +196,7 @@ edge* create_normal_graph(image<cv::Vec3f> *normals, int *edgeNum){
 	edges[num].a = y * width + x;
 	edges[num].b = y * width + (x+1);
 	edges[num].w = anglediff(normals, x, y, x+1, y);
+	normaldiff_img.at<float>(y, x) = edges[num].w; 
 	num++;
       }
 
@@ -199,7 +204,7 @@ edge* create_normal_graph(image<cv::Vec3f> *normals, int *edgeNum){
 	edges[num].a = y * width + x;
 	edges[num].b = (y+1) * width + x;
 	edges[num].w = anglediff(normals, x, y, x, y+1);
-
+	normaldiff_img.at<float>(y, x) += edges[num].w; 
 	num++;
       }
 
@@ -470,8 +475,8 @@ image<rgb> *visualise_normals(image<cv::Vec3f> *normalsVec){
 ********             segmentations.						   ****************
 **************************************************************************/
 
-universe *segment_image1C(image<float> * im, float sigma, float Kdepth, float Knormal, int min_size,
-			  int * num_ccs, image<rgb> ** normalIm, image<rgb> ** depthseg, image<rgb> ** normalseg, image<rgb> ** output) {
+
+universe *segment_image1C(image<float> * im, float sigma, float Kdepth, float Knormal, float depth_penalty, float normal_penalty, int min_size, int * num_ccs, image<rgb> ** normalIm, image<rgb> ** depthseg, image<rgb> ** normalseg, cv::Mat& normaldiff_img, image<rgb> ** output) {
   int width = im->width();
   int height = im->height();
 
@@ -492,8 +497,8 @@ universe *segment_image1C(image<float> * im, float sigma, float Kdepth, float Kn
   edge* g_depth = create_depth_graph(smooth_d, &num_depth);
 
   // segment depth graph
-  int depthThreshK = Kdepth;
-  universe *u_depth = segment_graph(width*height, num_depth, g_depth, depthThreshK);
+  float depthThreshK = Kdepth;
+  universe *u_depth = segment_graph(width*height, num_depth, g_depth, depthThreshK, depth_penalty);
 
   // post process small components of depth graph
   post_process_components(g_depth, u_depth, num_depth, min_size);
@@ -503,15 +508,15 @@ universe *segment_image1C(image<float> * im, float sigma, float Kdepth, float Kn
   *normalIm = visualise_normals(normals);
   
   int num_normal;
-  edge* g_normal = create_normal_graph(normals, &num_normal);
+  edge* g_normal = create_normal_graph(normals, &num_normal, normaldiff_img);
 
   //now both graphs are built delete images
   delete smooth_d;
   delete normals;
 
   //segment normal graph
-  int normalThreshK = Knormal;
-  universe *u_normal = segment_graph(width*height, num_normal, g_normal, normalThreshK);
+ 	float normalThreshK = Knormal;
+  universe *u_normal = segment_graph(width*height, num_normal, g_normal, normalThreshK, normal_penalty);
   
   // post process small components of normal graph
   

@@ -54,7 +54,7 @@ class candidate {
 		int size() const;
 		void RANSAC_inliers();
 		void calc_real_dims();
-		float calc_real_distance(float depth, int p, int length, float fov);
+		void calc_real_coords(float depth, int x, int y, float& real_x, float& real_y);
 		//void add_to_image(image<rgb> * im, rgb colour);
 };
 
