@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 	int actual_negatives = 0;
 
 	// Measure performance
-	if( SEGMENT_AUTO ) {
+	if( TEST_SEGMENT_AUTO ) {
 		perform_auto.measure(true_positives, false_positives, actual_positives, "test_frames", TEST_MIS_DIR); 
 	} else {
 		perform_manual.measure(true_positives, false_positives, actual_positives, actual_negatives, "test_data", TEST_MIS_DIR); 

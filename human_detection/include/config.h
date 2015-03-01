@@ -145,6 +145,13 @@
 
 // Segmentation 
 #define SEGMENT_AUTO true
+#define TEST_SEGMENT_AUTO false
+
+// Merging
+#define MERGE_ORDINARY 0
+#define MERGE_GAUSSIAN 1
+
+#define MERGE_METHOD MERGE_GAUSSIAN
 
 // HOG classification params
 #define HOG_CELL_SIZE 16
@@ -155,7 +162,7 @@
 #define FEATURE_RDSF 0
 #define FEATURE_HOG 1
 
-#define FEATURE_VECTOR FEATURE_HOG
+#define FEATURE_VECTOR FEATURE_RDSF
 
 // Classification
 #define BOOST_THRESHOLD 0

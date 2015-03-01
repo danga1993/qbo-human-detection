@@ -84,8 +84,8 @@ void Segmenter_Auto::segment(cv::Mat& img, std::vector<candidate>& candidates)
 	// merge regions
 	merge_and_filter(sub_img, u_segmented, sub_img->width(), sub_img->height(), img, candidates);
 
-	//display_candidates(sub_img->width(), sub_img->height(), candidates); 
-	//cv::waitKey();
+	display_candidates(sub_img->width(), sub_img->height(), candidates); 
+	cv::waitKey();
 
 	// Free all dynamic memory (not great C++)
 	delete normal_img;

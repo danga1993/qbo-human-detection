@@ -7,10 +7,14 @@
 #include <iostream>
 #include <map>
 
-
 #ifndef MERGENFILTER_H
 #define MERGENFILTER_H
 
+// Merging methods
+void original_merge(std::vector<candidate>& candidates);
+void gaussian_merge(std::vector<candidate>& candidates);
+
+// Performs merging and filtering of candidates
 void merge_and_filter(image<float> *im, universe * u, int width, int height, cv::Mat &depthim, std::vector<candidate>& candidates){
 
 	std::map<int,candidate> components;
@@ -100,10 +104,179 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 	//std::cout << "Displaying candidates" << std::endl;
 	
 	// Display the candidates before merge
-	//display_candidates(width, height, candidates); 
-	//cv::waitKey();
+	display_candidates(width, height, candidates); 
+	cv::waitKey();
+
+	switch( MERGE_METHOD ) {
+		case MERGE_ORDINARY: 
+			original_merge(candidates); 
+			break; 
+		case MERGE_GAUSSIAN: 
+			gaussian_merge(candidates); 
+			break; 
+	}
 	
+	
+	///*
+	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
+		//std::cout << "Candidate Size: " << itc->size() << std::endl;
+		if( (!itc-> erased) ){
+
+			int p_height = itc->ymax - itc->ymin;
+			int p_width = itc->xmax - itc->xmin;
+			int size = itc->size();
+
+			//std::cout << "Evaluating Candidate of Height: " << itc->real_height << ", Width: " << itc->real_width << std::endl;
+			//std::cout << "Height < MIN_HEIGHT: " << (itc->real_height < CANDIDATE_MIN_HEIGHT) << std::endl;
+			//std::cout << "Width < MIN_WIDTH: " << (itc->real_width < CANDIDATE_MIN_WIDTH) << std::endl;
+			//now reject any candidates that are still minimum post merge
+			//if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || ((float)size/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
+			if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) ){
+				//std::cout << "Erased" << std::endl;
+				itc->erased = true;
+			}
+		}
+	}
+	//*/
+
+	//finally convert images into candidate images and calculate their bounding boxes
+	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
+		if( (!itc-> erased) ){
+			//initialise the bounding box
+			itc->set_boundingBox();
+			itc->create_candidate_image(depthim);
+
+			//std::cout << "Displaying candidate" << std::endl;
+
+			//displayImg(itc->im); 
+			//cv::waitKey();
+		}
+	}
+
+}
+
+
+// Merges using gaussians
+void gaussian_merge(std::vector<candidate>& candidates) { 
+
+	float sigma = 0.4; 
+	float threshold_x = 1.7; 
+	float threshold_z = 0.5; 
+	float threshold_y = 1.0; 
+
 	//sort vector into order, largest first. (given we have overloaded the '<' operator to work with size)
+	std::sort(candidates.rbegin(), candidates.rend());
+
+	/*
+	for(std::vector<candidate>::iterator itc1 = candidates.begin(); itc1 != candidates.end(); itc1++){
+
+					// NOTE: PRECOMPUTE
+					float sigx = 0; 
+					float sigy = 0; 
+
+					// Estimate gaussian variances for merge candidate
+					for (std::vector<cv::Point3f>::iterator itpt = itc1->pts.begin(); itpt != itc1->pts.end(); ++itpt){
+						float x, y; 
+						itc1->calc_real_coords(itc1->centre.z, itpt->x*ALPHA, itpt->y*ALPHA, x, y); 
+
+						sigx += pow(x - itc1->centre.x,2);  
+						sigy += pow(y - itc1->centre.y,2);  
+
+					}
+
+					sigx /= itc1->size(); 
+					sigy /= itc1->size(); 
+
+					std::cout << "Candidate " << itc1->id << std::endl;
+					std::cout << "Centre x: " << itc1->centre.x << " y: " << itc1->centre.y << std::endl;
+					std::cout << "Sigx: " << sigx << " Sigy: " << sigy << std::endl;
+					std::cout << "Aspect y/x: " << sqrt(sigy/sigx) << std::endl;
+
+	} */
+
+	
+
+	// NOTE: THIS LOOP MIGHT NEED TO BE REPEATED
+	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
+
+		//std::cout << "Candidate Size: " << itc->size() << std::endl;
+		int p_height = itc->ymax - itc->ymin;
+		int p_width = itc->xmax - itc->xmin;
+		int size = itc->size();
+
+		if(p_height*p_width == 0){
+			//std::cout << "Zero area found" << std::endl;
+		} 
+
+		/* std::cout << "Id: " << itc->id << std::endl;
+		std::cout << "Height: " << itc->real_height;
+		std::cout << " Width: " << itc->real_width;
+		std::cout << " Density: " << ((float)size / (p_height * p_width)) << std::endl; */
+
+
+		
+
+		//if the candidate is smaller than the minimum width or height
+		if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || ((float)size/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
+			//search for larger candidates (i.e. from end() to where we are now; itc)
+			cv::Point2f centrexz(itc->centre.x, itc->centre.z);
+			///*		
+			std::ostringstream buf; 
+
+	
+			//for(std::vector<candidate>::iterator itc1 = candidates.begin(); *itc1 > *itc ; itc1++){
+			int n = 8; 
+			for(std::vector<candidate>::iterator itc1 = candidates.begin(); n > 0; itc1++, n--){
+				if (!itc1->erased){
+
+					float weight = 0; 
+			
+					// Estimate merge factor for candidate
+					for (std::vector<cv::Point3f>::iterator itpt = itc->pts.begin() ; itpt != itc->pts.end(); ++itpt){
+						float x,y;
+						itc->calc_real_coords(itc->centre.z, itpt->x*ALPHA, itpt->y*ALPHA, x, y); 
+
+						weight += exp( abs(x - itc1->centre.x) / sigma ); 
+			
+					}
+
+					weight /= itc->size(); 
+
+					float y_distance = abs(itc->centre.y-itc1->centre.y);
+					float z_distance = abs(itc->centre.z-itc1->centre.z);
+
+					// Merge if below threshold
+						buf << "Merge " << itc->id << " ( " << itc->centre.x << "," << itc->centre.y << ", " << itc->centre.z << ") -> " << itc1->id << " ( " << itc1->centre.x << "," << itc1->centre.y << ", " << itc1->centre.z << ")" << std::endl;
+						buf << "Weight: " << weight << std::endl;
+
+						std::cout << buf.str();
+
+					if( weight < threshold_x && y_distance < threshold_y && z_distance < threshold_z ) {
+		
+						// std::cout << buf.str(); 				
+
+						 itc1->merge(*itc); //merge itc into itc1
+						 itc->erased = true; //and erase itc
+
+						break;
+
+					}
+
+				}
+
+			}
+
+		} 
+
+	}
+						
+}
+
+
+// Merges as done in research paper
+void original_merge(std::vector<candidate>& candidates) { 
+
+//sort vector into order, largest first. (given we have overloaded the '<' operator to work with size)
 	std::sort(candidates.rbegin(), candidates.rend());
 
 	// NOTE: THIS LOOP MIGHT NEED TO BE REPEATED
@@ -157,42 +330,7 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 		}
 	}
 
-	///*
-	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
-		//std::cout << "Candidate Size: " << itc->size() << std::endl;
-		if( (!itc-> erased) ){
-
-			int p_height = itc->ymax - itc->ymin;
-			int p_width = itc->xmax - itc->xmin;
-			int size = itc->size();
-
-			//std::cout << "Evaluating Candidate of Height: " << itc->real_height << ", Width: " << itc->real_width << std::endl;
-			//std::cout << "Height < MIN_HEIGHT: " << (itc->real_height < CANDIDATE_MIN_HEIGHT) << std::endl;
-			//std::cout << "Width < MIN_WIDTH: " << (itc->real_width < CANDIDATE_MIN_WIDTH) << std::endl;
-			//now reject any candidates that are still minimum post merge
-			//if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || ((float)size/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
-			if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) ){
-				//std::cout << "Erased" << std::endl;
-				itc->erased = true;
-			}
-		}
-	}
-	//*/
-
-	//finally convert images into candidate images and calculate their bounding boxes
-	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
-		if( (!itc-> erased) ){
-			//initialise the bounding box
-			itc->set_boundingBox();
-			itc->create_candidate_image(depthim);
-
-			//std::cout << "Displaying candidate" << std::endl;
-
-			//displayImg(itc->im); 
-			//cv::waitKey();
-		}
-	}
-
 }
+
 
 #endif
