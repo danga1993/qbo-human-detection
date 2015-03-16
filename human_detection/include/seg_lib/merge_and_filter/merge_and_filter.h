@@ -14,6 +14,8 @@
 void original_merge(std::vector<candidate>& candidates);
 void gaussian_merge(std::vector<candidate>& candidates);
 
+void merge_edges(candidate& dest, candidate& src, std::vector<candidate>& candidates);
+
 // Performs merging and filtering of candidates
 void merge_and_filter(image<float> *im, universe * u, int width, int height, cv::Mat &depthim, std::vector<candidate>& candidates){
 
@@ -61,7 +63,48 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 	}
 	//*/
 
-	 //std::cout << "Components " << components.size() << std::endl; 
+	//std::cout << "Components " << components.size() << std::endl; 
+
+	//std::map<int,candidate>::iterator local_vertex;
+	//std::map<int,candidate>::iterator edge_vertex;
+
+	candidate * local_vertex; 
+	candidate * edge_vertex; 
+
+	// Add up number of edges for each component
+	for(int y=0; y < height; y++) {
+		for(int x = 0; x < width; x++) {
+
+			// Vertex (x,y)
+			local_vertex = &(components.find(u->find(y*width+x))->second);
+
+			if (x < width-1) {
+				edge_vertex = &(components.find(u->find(y * width + (x+1)))->second);
+				local_vertex->add_edge(edge_vertex->id); 
+				edge_vertex->add_edge(local_vertex->id); 
+		  }
+
+	    if (y < height-1) {
+				edge_vertex = &(components.find(u->find((y+1) * width + x))->second);
+				local_vertex->add_edge(edge_vertex->id); 
+				edge_vertex->add_edge(local_vertex->id); 
+	    }
+
+	    if ((x < width-1) && (y < height-1)) {
+				edge_vertex = &(components.find(u->find((y+1) * width + (x+1)))->second);
+				local_vertex->add_edge(edge_vertex->id); 
+				edge_vertex->add_edge(local_vertex->id); 
+	    }
+
+	    if ((x < width-1) && (y > 0)) {
+				edge_vertex = &(components.find(u->find((y-1) * width + (x+1)))->second);
+				local_vertex->add_edge(edge_vertex->id); 
+				edge_vertex->add_edge(local_vertex->id); 
+	    }
+
+		}
+	}
+
 
 	//for each candidate, calculate the centres of mass, and reject those candidates which are not sufficiently planar
 	for(it = components.begin(); it != components.end(); it++){
@@ -92,14 +135,42 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 	//free up some memory
 	components.clear();
 
+	//sort vector into order, largest first. (given we have overloaded the '<' operator to work with size)
+	std::sort(candidates.rbegin(), candidates.rend());
+
+	
 	// Re ID the candidates
 	{ 
 		int i = 0; 
 
+		std::map<int,int> cand_map; 
+
+		// Create mapping from old -> new id
 		for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++, i++) {
-			itc->id = i; 	
+			cand_map.insert(std::pair<int,int>(itc->id, i));  	
+			//std::cout << "Mapping " << itc->id << " to " << i << std::endl; 
+			itc->id = i;
 		}
-	}
+
+		//std::cout << "Re-id candidates" << std::endl;
+
+		// Update edges
+		for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++) {
+
+			// Build new edge map
+			std::map<int,int> edge_map; 	
+
+			for(std::map<int,int>::iterator it1 = itc->edges.begin(); it1 != itc->edges.end(); it1++) {
+				if( cand_map.count(it1->first) ) {
+					edge_map.insert(std::pair<int,int>(cand_map.at(it1->first), it1->second)); 
+				}
+			}
+
+			// Swap in new map
+			itc->edges = edge_map; 
+
+		}	
+	} 
 
 	//std::cout << "Displaying candidates" << std::endl;
 	
@@ -131,10 +202,10 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 			//std::cout << "Width < MIN_WIDTH: " << (itc->real_width < CANDIDATE_MIN_WIDTH) << std::endl;
 			//now reject any candidates that are still minimum post merge
 			//if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || ((float)size/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
-			if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) ){
+		/*	if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) ){
 				//std::cout << "Erased" << std::endl;
 				itc->erased = true;
-			}
+			} */
 		}
 	}
 	//*/
@@ -163,9 +234,7 @@ void gaussian_merge(std::vector<candidate>& candidates) {
 	float threshold_x = 1.7; 
 	float threshold_z = 0.5; 
 	float threshold_y = 1.0; 
-
-	//sort vector into order, largest first. (given we have overloaded the '<' operator to work with size)
-	std::sort(candidates.rbegin(), candidates.rend());
+	float weight_factor = 0.5; 
 
 	/*
 	for(std::vector<candidate>::iterator itc1 = candidates.begin(); itc1 != candidates.end(); itc1++){
@@ -217,16 +286,15 @@ void gaussian_merge(std::vector<candidate>& candidates) {
 		
 
 		//if the candidate is smaller than the minimum width or height
-		if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || ((float)size/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
+		//if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || ((float)size/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
 			//search for larger candidates (i.e. from end() to where we are now; itc)
 			cv::Point2f centrexz(itc->centre.x, itc->centre.z);
 			///*		
-			std::ostringstream buf; 
 
 	
 			//for(std::vector<candidate>::iterator itc1 = candidates.begin(); *itc1 > *itc ; itc1++){
-			int n = 8; 
-			for(std::vector<candidate>::iterator itc1 = candidates.begin(); n > 0; itc1++, n--){
+			int n = 15; 
+			for(std::vector<candidate>::iterator itc1 = candidates.begin(); (n > 0 && *itc1 > *itc); itc1++, n--){
 				if (!itc1->erased){
 
 					float weight = 0; 
@@ -246,16 +314,31 @@ void gaussian_merge(std::vector<candidate>& candidates) {
 					float z_distance = abs(itc->centre.z-itc1->centre.z);
 
 					// Merge if below threshold
-						buf << "Merge " << itc->id << " ( " << itc->centre.x << "," << itc->centre.y << ", " << itc->centre.z << ") -> " << itc1->id << " ( " << itc1->centre.x << "," << itc1->centre.y << ", " << itc1->centre.z << ")" << std::endl;
-						buf << "Weight: " << weight << std::endl;
+						std::cout << "Merge " << itc->id << " ( " << itc->centre.x << "," << itc->centre.y << ", " << itc->centre.z << ") -> " << itc1->id << " ( " << itc1->centre.x << "," << itc1->centre.y << ", " << itc1->centre.z << ")" << std::endl;
+						std::cout << "Weight: " << weight;
+			
+						if( itc1->edges.count(itc->id) ) {
+							std::cout << " Edges: " << itc1->edges.at(itc->id);
 
-						std::cout << buf.str();
+							// Calculate edge fraction
+							std::cout << " Edge fraction: " << (((float)itc1->edges.at(itc->id) / size)) << std::endl;
+
+							// Add to weight
+							weight -= ((float)itc1->edges.at(itc->id) / size) * weight_factor; 
+
+							std::cout << "New Weight: " << weight << std::endl;
+
+						} else {
+							std::cout << "0" << std::endl;
+						}
+
 
 					if( weight < threshold_x && y_distance < threshold_y && z_distance < threshold_z ) {
 		
 						// std::cout << buf.str(); 				
 
 						 itc1->merge(*itc); //merge itc into itc1
+						 merge_edges(*itc1, *itc, candidates); 
 						 itc->erased = true; //and erase itc
 
 						break;
@@ -266,7 +349,7 @@ void gaussian_merge(std::vector<candidate>& candidates) {
 
 			}
 
-		} 
+		//} 
 
 	}
 						
@@ -275,9 +358,6 @@ void gaussian_merge(std::vector<candidate>& candidates) {
 
 // Merges as done in research paper
 void original_merge(std::vector<candidate>& candidates) { 
-
-//sort vector into order, largest first. (given we have overloaded the '<' operator to work with size)
-	std::sort(candidates.rbegin(), candidates.rend());
 
 	// NOTE: THIS LOOP MIGHT NEED TO BE REPEATED
 	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
@@ -332,5 +412,50 @@ void original_merge(std::vector<candidate>& candidates) {
 
 }
 
+
+// Merge edge counts for the two candidates
+// NOTE: Can be done more efficiently if edges point from larger -> smaller candidates
+void merge_edges(candidate& dest, candidate& src, std::vector<candidate>& candidates) { 
+
+	// Remove edges between source and destination
+	if( dest.edges.count(src.id) ) {
+		dest.edges.erase(src.id); 
+	}
+
+	if( src.edges.count(dest.id) ) {
+		src.edges.erase(dest.id); 
+	}
+
+	// Add source edges to destination
+	for( std::map<int,int>::iterator it = src.edges.begin(); it != src.edges.end(); it++ ) {
+
+		// Add edge to destination count
+		if( dest.edges.count(it->first) ) {
+			dest.edges.at(it->first) += it->second; 
+		} else {
+			dest.edges.insert(std::pair<int,int>(it->first, it->second)); 
+		}
+
+	}
+
+	// Change links in remote vertexes
+	for( std::vector<candidate>::iterator it = candidates.begin(); it != candidates.end(); it++ ) {
+
+		if( it->edges.count(src.id) ) {
+
+			if( it->edges.count(dest.id) ) {
+				it->edges.at(dest.id) += it->edges.at(src.id); 
+			} else {
+				it->edges.insert(std::pair<int,int>(dest.id, it->edges.at(src.id))); 
+			}
+
+			it->edges.erase(src.id); 
+
+		}
+
+	}
+
+}
+	
 
 #endif

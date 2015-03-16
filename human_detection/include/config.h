@@ -25,14 +25,14 @@
 #define SIGMA 0.5
 #define ALPHA 8
 #define ESS 13
-#define KDEPTH 3
-#define KNORMAL 0.3   // 18
+#define KDEPTH 1.5
+#define KNORMAL 18   // 18
 #define MIN_SIZE 30
 #define CANDIDATE_WIDTH 64
 #define CANDIDATE_HEIGHT 128
 #define DILATING_SCALE 5
 
-#define NORMAL_SIZE_PENALTY 1  // 1.7
+#define NORMAL_SIZE_PENALTY 1.7  // 1.7
 #define DEPTH_SIZE_PENALTY 1
 
 //define system parameters

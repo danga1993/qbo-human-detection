@@ -69,6 +69,7 @@ candidate::candidate(int x,int y, float z, int i){
 	human = false;
 	id = i;
 	max_inlier_fraction = 0;
+	edge_count = 0;
 	//std::cout << "New Candidate: (" << x << "," << y << "," << z << ") with id: " << id << std::endl;
 	pts.push_back(cv::Point3f(x,y,z));
 	classification = -1;
@@ -107,6 +108,22 @@ void candidate::add(int x, int y, float z){
 	//std::cout << "Add: (" << x << "," << y << "," << z << ") to candidate with id: " << id << std::endl;
 	pts.push_back(cv::Point3f(x,y,z));
 }
+
+void candidate::add_edge(int vertex_id) {
+
+	if( vertex_id != id ) {
+
+		if( edges.count(vertex_id) ) {
+			edges.at(vertex_id)++; 
+		} else {
+			edges.insert(std::pair<int,int>(vertex_id, 1)); 
+		}
+
+		edge_count++; 
+
+	}
+}
+
 
 void candidate::set_boundingBox(){
 	boundingBox = cv::Rect(xmin*ALPHA,ymin*ALPHA,(xmax-xmin+1)*ALPHA,(ymax-ymin+1)*ALPHA);

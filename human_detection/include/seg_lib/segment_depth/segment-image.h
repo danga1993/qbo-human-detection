@@ -243,6 +243,24 @@ void post_process_components(edge* edges, universe *u, int num, int min_size){
   }
 }
 
+
+// Merge small components if connected in the reference universe
+void post_process_components_ref(edge* edges, universe *u, universe *ref, int num, int min_size) {
+	 for (int i = 0; i < num; i++) {
+
+    int a = u->find(edges[i].a);
+    int b = u->find(edges[i].b);
+
+		// Find corresponding components in reference universe
+		int a_ref = ref->find(edges[i].a); 
+		int b_ref = ref->find(edges[i].b); 
+
+    if ((a != b) && ((u->size(a) < min_size) || (u->size(b) < min_size)) && (a_ref == b_ref))
+      u->join(a, b);
+  }
+}
+
+
 /********************************************************************
 ********Function: create_imageFrom_universe			 ****************
 ********Description: Given a universe image, returns ****************
@@ -527,8 +545,12 @@ universe *segment_image1C(image<float> * im, float sigma, float Kdepth, float Kn
   // both u_normal and u_depth
   universe *u_final = merge_segmentations(u_depth, u_normal, width, height);
 
+	// Shuffle depth edge graph randomly
+	std::random_shuffle(&g_depth[0], &g_depth[num_depth-1]); 
+
   //TODO properly
-  post_process_components(g_depth, u_final, num_depth, min_size);
+  //post_process_components(g_depth, u_final, num_depth, min_size);
+	post_process_components_ref(g_depth, u_final, u_depth, num_depth, min_size);
 
   delete [] g_depth;
   delete [] g_normal;

@@ -31,10 +31,14 @@ class candidate {
 		//variables to help calculate candidate features
 		int xmin, xmax, ymin, ymax;
 		float depth_accumulator;
+		int edge_count;
 
 		//variables for other aids
 		std::vector<cv::Point3f> pts;
 		int id;
+
+		// Edges
+		std::map<int,int> edges;
 
 		//Constructors & destructors
 		candidate();
@@ -45,6 +49,7 @@ class candidate {
 
 		//member functions
 		void add(int x, int y, float z);
+		void add_edge(int vertex_id);
 		void set_boundingBox();
 		void create_candidate_image(cv::Mat &depthim);
 		void create_candidate_image(cv::Mat &depthim, cv::Rect& region);
