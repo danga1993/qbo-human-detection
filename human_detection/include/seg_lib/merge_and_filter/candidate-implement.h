@@ -63,7 +63,7 @@ candidate::candidate(int x,int y, float z, int i){
 	xmax = x;
 	ymax = y;
 	depth_accumulator = z;
-	boundingBox = cv::Rect(xmin,ymin,xmax-xmin,ymax-ymin);
+	box = cv::Rect(xmin,ymin,xmax-xmin,ymax-ymin);
 	erased = false; //TODO
 	merged = false;
 	human = false;
@@ -126,7 +126,11 @@ void candidate::add_edge(int vertex_id) {
 
 
 void candidate::set_boundingBox(){
-	boundingBox = cv::Rect(xmin*ALPHA,ymin*ALPHA,(xmax-xmin+1)*ALPHA,(ymax-ymin+1)*ALPHA);
+	box = cv::Rect(xmin,ymin,(xmax-xmin+1),(ymax-ymin+1));
+}
+
+void candidate::fullscale_boundingBox() { 
+	box = cv::Rect(box.x * ALPHA, box.y * ALPHA, box.width * ALPHA, box.height * ALPHA); 
 }
 
 int candidate::size() const{
@@ -152,24 +156,26 @@ void candidate::calc_real_dims(){
 void candidate::create_candidate_image(cv::Mat &depthim){
 	//a value of -1 is invalid.
 
-	int width = xmax-xmin+1;
-	int height = ymax-ymin +1;
+	//std::cout << "Width: " << box.width << " Height: " << box.height << std::endl;
 
-	cv::Mat oscm = cv::Mat::zeros(cv::Size(width,height),CV_8UC1); //original scale candidate mask
+	cv::Mat oscm = cv::Mat::zeros(cv::Size(box.width,box.height),CV_8UC1); //original scale candidate mask
 	//std::cout << "Size of oscm: width = " << oscm.size().width << ", height = " << oscm.size().height << std::endl; 
 	//std::cout << "xmin = " << xmin <<", xmax = " << xmax << ", ymin = " << ymin <<", ymax = " << ymax << std::endl;
 
 	//given that we only have a list of points, we first need to build the image representing these points
 	for (std::vector<cv::Point3f>::iterator it = pts.begin(); it != pts.end(); it++){
 		//std::cout << "x: " << it->x - xmin << ", y: " << it->y - ymin << std::endl;		
-		oscm.at<uchar>(cv::Point(it->x-xmin,it->y-ymin)) = 1;
+
+		if( box.contains(cv::Point(it->x, it->y)) ) {
+			oscm.at<uchar>(cv::Point(it->x-box.x,it->y-box.y)) = 1;
+		}
 		//std::cout<< "Mask val: " << oscm.at<uchar>(cv::Point(it->x-xmin,it->y-ymin)) << std::endl;
 	}
 
 	// Original scale candidate image
-	cv::Mat nscm = cv::Mat(cv::Size(width*ALPHA, height*ALPHA), CV_32FC1, 0.0); //New Scale Candidate Mask
+	cv::Mat nscm = cv::Mat(cv::Size(box.width*ALPHA, box.height*ALPHA), CV_32FC1, 0.0); //New Scale Candidate Mask
 
-	//std::cout << "Scaling: " << scaling << ", new: width = " << nscm.size().width << ", height = " << nscm.size().height << std::endl; 
+	//std::cout << "new: width = " << nscm.size().width << ", height = " << nscm.size().height << std::endl; 
 
 	// Fill in this new scaled image
 	for(int x = 0; x < nscm.size().width; x++){
@@ -180,7 +186,7 @@ void candidate::create_candidate_image(cv::Mat &depthim){
 			if( oscm.at<uchar>(cv::Point(oldx,oldy)) == 1 ) {
 
 				// Position of pixel in original image
-				cv::Point depth_pel = cv::Point(xmin, ymin)*ALPHA + cv::Point(x, y); 
+				cv::Point depth_pel = box.tl()*ALPHA + cv::Point(x, y); 
 	
 				nscm.at<float>(cv::Point(x,y)) = depthim.at<float>(depth_pel); 
 
@@ -258,7 +264,7 @@ void candidate::position_candidate_image(cv::Mat& cand_window, cv::Mat& cand_ima
 
 }
 
-bool candidate::merge(candidate c){
+bool candidate::merge(candidate& c, std::vector<candidate>& candidates){
 	//note that c should be of a larger size than this
 	if( c.size() > size() ){
 		std::cout << "MERGE FAILED: CAN ONLY MERGE WITH A SMALLER CANDIDATE" << std::endl;
@@ -284,6 +290,10 @@ bool candidate::merge(candidate c){
 		count++;
 		depth_accumulator+=it->z;
 	}
+
+	// Merge edges
+	merge_edges(c, candidates); 
+
 	//std::cout << "Pixels Added: " << count << std::endl;
 	merged = true;
 	return true;
@@ -415,4 +425,114 @@ void candidate::calc_centre(){
 	//std::cout << "xmin: " << xmin << ", xmax: " << xmax << ", ymin: " << ymin << ", ymax: " << ymax <<std::endl;
 	
 }
+
+
+// Merge edge counts for the two candidates
+// NOTE: Can be done more efficiently if edges point from larger -> smaller candidates
+void candidate::merge_edges(candidate& src, std::vector<candidate>& candidates) { 
+
+	// Remove edges between source and destination
+	if( edges.count(src.id) ) {
+		edges.erase(src.id); 
+	}
+
+	if( src.edges.count(id) ) {
+		src.edges.erase(id); 
+	}
+
+	// Add source edges to destination
+	for( std::map<int,int>::iterator it = src.edges.begin(); it != src.edges.end(); it++ ) {
+
+		// Add edge to destination count
+		if( edges.count(it->first) ) {
+			edges.at(it->first) += it->second; 
+		} else {
+			edges.insert(std::pair<int,int>(it->first, it->second)); 
+		}
+
+	}
+
+	// Change links in remote vertexes
+	for( std::vector<candidate>::iterator it = candidates.begin(); it != candidates.end(); it++ ) {
+
+		if( it->edges.count(src.id) ) {
+
+			if( it->edges.count(id) ) {
+				it->edges.at(id) += it->edges.at(src.id); 
+			} else {
+				it->edges.insert(std::pair<int,int>(id, it->edges.at(src.id))); 
+			}
+
+			it->edges.erase(src.id); 
+
+		}
+
+	}
+
+}
+
+
+// Crimp box around candidate 
+void candidate::crimp_boundingbox(int sub_width, int sub_height) {
+
+	int width = xmax - xmin + 1; 
+	int height = ymax - ymin + 1; 
+
+	// Crimp in from outer edges until candidate sufficiently tall
+	const int crimp_threshold = CRIMP_THRESHOLD * height; 
+
+	// Produce vectors for vertical and horizontal sums
+	std::vector<int> horizontal_pels(xmax-xmin+1, 0); 
+
+	for(std::vector<cv::Point3f>::iterator it = pts.begin() ; it != pts.end(); ++it){
+
+		horizontal_pels.at(it->x-xmin)++; 
+
+	}
+
+	box.y = ymin; 
+	box.height = ymax - ymin + 1; 
+
+	int left_offset, right_offset; 
+
+	// Crimp from left
+	for( std::vector<int>::iterator it = horizontal_pels.begin(); it != horizontal_pels.end(); it++ ) {
+
+		if( *it >= crimp_threshold ) {
+			left_offset = it - horizontal_pels.begin(); 
+			break; 
+		}
+
+	}
+	
+	// Crimp from right
+	for( std::vector<int>::reverse_iterator it = horizontal_pels.rbegin(); it != horizontal_pels.rend(); it++ ) {
+
+		if( *it >= crimp_threshold ) {
+			right_offset = it - horizontal_pels.rbegin(); 
+			break; 
+		}
+
+	}
+
+	box.x = xmin + left_offset; 
+	box.width = (xmax - box.x + 1) - right_offset; 
+
+	std::cout << "Candidate: " << id << std::endl;
+	//std::cout << "Left Offset: " << left_offset << " Right offset: " << right_offset << std::endl;
+	std::cout << "Width: " << box.width << " Height: " << box.height << " X: " << box.x << std::endl;
+
+	// Back off edges
+	box.x -= box.width * CRIMP_PADDING;
+	box.width += box.width * CRIMP_PADDING * 2;
+
+	//std::cout << "Width: " << box.width << " X: " << box.x << std::endl;
+
+	// Clamp to edge of image
+	box.x = (box.x < 0) ? 0 : box.x; 
+	box.width = (box.x + box.width > sub_width) ? sub_width-box.x : box.width;  
+
+}
+
+	
 

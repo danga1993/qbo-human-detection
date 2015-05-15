@@ -46,9 +46,9 @@
 //merge and filter params
 #define MIN_INLIER_FRACTION 0.5 // for rejecting non-planar regions
 #define VALID_VALUE 0.000001
-#define CANDIDATE_MIN_WIDTH 0.3 //meters
+#define CANDIDATE_MIN_WIDTH 0.2 //meters
 #define CANDIDATE_MAX_WIDTH 1.5 //meters
-#define CANDIDATE_MIN_HEIGHT 1 //meters
+#define CANDIDATE_MIN_HEIGHT 0.7 //meters
 #define CANDIDATE_MAX_HEIGHT 2 //meters
 #define CANDIDATE_MIN_DENSITY 0.4
 #define DELTAXZ 0.3
@@ -152,6 +152,9 @@
 #define MERGE_GAUSSIAN 1
 
 #define MERGE_METHOD MERGE_GAUSSIAN
+
+#define CRIMP_THRESHOLD 0.3 // 0.4
+#define CRIMP_PADDING 0.1
 
 // HOG classification params
 #define HOG_CELL_SIZE 16

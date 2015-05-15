@@ -13,7 +13,7 @@
 class candidate {
 	public:
 		//descriptor requirements
-		cv::Rect boundingBox;
+		cv::Rect box;
 		cv::Mat im;
 		int classification;
 
@@ -51,15 +51,18 @@ class candidate {
 		void add(int x, int y, float z);
 		void add_edge(int vertex_id);
 		void set_boundingBox();
+		void fullscale_boundingBox();
 		void create_candidate_image(cv::Mat &depthim);
 		void create_candidate_image(cv::Mat &depthim, cv::Rect& region);
 		void position_candidate_image(cv::Mat& cand_window, cv::Mat& cand_image); 
-		bool merge(candidate c);
+		bool merge(candidate& c, std::vector<candidate>& candidates);
+		void merge_edges(candidate& src, std::vector<candidate>& candidates);
 		void calc_centre();
 		int size() const;
 		void RANSAC_inliers();
 		void calc_real_dims();
 		void calc_real_coords(float depth, int x, int y, float& real_x, float& real_y);
+		void crimp_boundingbox(int width, int height);
 		//void add_to_image(image<rgb> * im, rgb colour);
 };
 

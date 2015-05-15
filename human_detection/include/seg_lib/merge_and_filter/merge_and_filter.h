@@ -188,7 +188,7 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 	}
 	
 	
-	///*
+	
 	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
 		//std::cout << "Candidate Size: " << itc->size() << std::endl;
 		if( (!itc-> erased) ){
@@ -197,15 +197,18 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 			int p_width = itc->xmax - itc->xmin;
 			int size = itc->size();
 
+			itc->crimp_boundingbox(width, height);
+		
 			//std::cout << "Evaluating Candidate of Height: " << itc->real_height << ", Width: " << itc->real_width << std::endl;
 			//std::cout << "Height < MIN_HEIGHT: " << (itc->real_height < CANDIDATE_MIN_HEIGHT) << std::endl;
 			//std::cout << "Width < MIN_WIDTH: " << (itc->real_width < CANDIDATE_MIN_WIDTH) << std::endl;
 			//now reject any candidates that are still minimum post merge
 			//if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || ((float)size/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
-		/*	if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) ){
-				//std::cout << "Erased" << std::endl;
+			if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || (itc->box.width <= 0) || (itc->box.height <= 0) ) {
+			//if( (itc->box.width <= 0) || (itc->box.height <= 0) ) {
+				//std::cout << "Erased " << itc->id << std::endl;
 				itc->erased = true;
-			} */
+			} 
 		}
 	}
 	//*/
@@ -215,7 +218,9 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 		if( (!itc-> erased) ){
 			//initialise the bounding box
 			itc->set_boundingBox();
+			itc->crimp_boundingbox(width, height);
 			itc->create_candidate_image(depthim);
+			itc->fullscale_boundingBox(); 
 
 			//std::cout << "Displaying candidate" << std::endl;
 
@@ -230,40 +235,11 @@ void merge_and_filter(image<float> *im, universe * u, int width, int height, cv:
 // Merges using gaussians
 void gaussian_merge(std::vector<candidate>& candidates) { 
 
-	float sigma = 0.4; 
-	float threshold_x = 1.7; 
+	float sigma = 0.4;   // 0.4
+	float threshold_x = 1.6; 
 	float threshold_z = 0.5; 
 	float threshold_y = 1.0; 
-	float weight_factor = 0.5; 
-
-	/*
-	for(std::vector<candidate>::iterator itc1 = candidates.begin(); itc1 != candidates.end(); itc1++){
-
-					// NOTE: PRECOMPUTE
-					float sigx = 0; 
-					float sigy = 0; 
-
-					// Estimate gaussian variances for merge candidate
-					for (std::vector<cv::Point3f>::iterator itpt = itc1->pts.begin(); itpt != itc1->pts.end(); ++itpt){
-						float x, y; 
-						itc1->calc_real_coords(itc1->centre.z, itpt->x*ALPHA, itpt->y*ALPHA, x, y); 
-
-						sigx += pow(x - itc1->centre.x,2);  
-						sigy += pow(y - itc1->centre.y,2);  
-
-					}
-
-					sigx /= itc1->size(); 
-					sigy /= itc1->size(); 
-
-					std::cout << "Candidate " << itc1->id << std::endl;
-					std::cout << "Centre x: " << itc1->centre.x << " y: " << itc1->centre.y << std::endl;
-					std::cout << "Sigx: " << sigx << " Sigy: " << sigy << std::endl;
-					std::cout << "Aspect y/x: " << sqrt(sigy/sigx) << std::endl;
-
-	} */
-
-	
+	float weight_factor = 0.15; 
 
 	// NOTE: THIS LOOP MIGHT NEED TO BE REPEATED
 	for(std::vector<candidate>::iterator itc = candidates.begin(); itc != candidates.end(); itc++){
@@ -281,9 +257,6 @@ void gaussian_merge(std::vector<candidate>& candidates) {
 		std::cout << "Height: " << itc->real_height;
 		std::cout << " Width: " << itc->real_width;
 		std::cout << " Density: " << ((float)size / (p_height * p_width)) << std::endl; */
-
-
-		
 
 		//if the candidate is smaller than the minimum width or height
 		//if( (itc->real_width < CANDIDATE_MIN_WIDTH) || (itc->real_height < CANDIDATE_MIN_HEIGHT) || ((float)size/(p_height*p_width) < CANDIDATE_MIN_DENSITY) ){
@@ -313,32 +286,32 @@ void gaussian_merge(std::vector<candidate>& candidates) {
 					float y_distance = abs(itc->centre.y-itc1->centre.y);
 					float z_distance = abs(itc->centre.z-itc1->centre.z);
 
-					// Merge if below threshold
-						std::cout << "Merge " << itc->id << " ( " << itc->centre.x << "," << itc->centre.y << ", " << itc->centre.z << ") -> " << itc1->id << " ( " << itc1->centre.x << "," << itc1->centre.y << ", " << itc1->centre.z << ")" << std::endl;
-						std::cout << "Weight: " << weight;
+					if( itc->id < 25 ) {
+				  	// Merge if below threshold
+						//std::cout << "Merge " << itc->id << " ( " << itc->centre.x << "," << itc->centre.y << ", " << itc->centre.z << ") -> " << itc1->id << " ( " << itc1->centre.x << "," << itc1->centre.y << ", " << itc1->centre.z << ")" << std::endl;
+						//std::cout << "Weight: " << weight << std::endl;
+					}
 			
 						if( itc1->edges.count(itc->id) ) {
-							std::cout << " Edges: " << itc1->edges.at(itc->id);
 
-							// Calculate edge fraction
-							std::cout << " Edge fraction: " << (((float)itc1->edges.at(itc->id) / size)) << std::endl;
-
+							float edge_factor = exp( -((float)itc1->edges.at(itc->id) / size) * weight_factor / sigma ); 
 							// Add to weight
-							weight -= ((float)itc1->edges.at(itc->id) / size) * weight_factor; 
+							weight *= edge_factor; 
 
-							std::cout << "New Weight: " << weight << std::endl;
+							if( itc->id < 25 ) {
+								//std::cout << " Edges: " << itc1->edges.at(itc->id);
+								//std::cout << " Edge fraction: " << (((float)itc1->edges.at(itc->id) / size));
+								//std::cout << " Edge factor: " << edge_factor;
+								//std::cout << " New Weight: " << weight << std::endl;
+							}
 
-						} else {
-							std::cout << "0" << std::endl;
 						}
-
 
 					if( weight < threshold_x && y_distance < threshold_y && z_distance < threshold_z ) {
 		
 						// std::cout << buf.str(); 				
 
-						 itc1->merge(*itc); //merge itc into itc1
-						 merge_edges(*itc1, *itc, candidates); 
+						 itc1->merge(*itc, candidates); //merge itc into itc1
 						 itc->erased = true; //and erase itc
 
 						break;
@@ -395,7 +368,7 @@ void original_merge(std::vector<candidate>& candidates) {
 					//std::cout << " XZ: " << xz_distance << " Y: " << y_distance << std::endl;
 		
 					if( (xz_distance < DELTAXZ) && (y_distance < DELTAY) ){
-						 itc1->merge(*itc); //merge itc into itc1
+						 itc1->merge(*itc, candidates); //merge itc into itc1
 						 itc->erased = true; //and erase itc
 						 //std::cout << "Merged" << std::endl;
 						 break;
@@ -413,49 +386,6 @@ void original_merge(std::vector<candidate>& candidates) {
 }
 
 
-// Merge edge counts for the two candidates
-// NOTE: Can be done more efficiently if edges point from larger -> smaller candidates
-void merge_edges(candidate& dest, candidate& src, std::vector<candidate>& candidates) { 
 
-	// Remove edges between source and destination
-	if( dest.edges.count(src.id) ) {
-		dest.edges.erase(src.id); 
-	}
-
-	if( src.edges.count(dest.id) ) {
-		src.edges.erase(dest.id); 
-	}
-
-	// Add source edges to destination
-	for( std::map<int,int>::iterator it = src.edges.begin(); it != src.edges.end(); it++ ) {
-
-		// Add edge to destination count
-		if( dest.edges.count(it->first) ) {
-			dest.edges.at(it->first) += it->second; 
-		} else {
-			dest.edges.insert(std::pair<int,int>(it->first, it->second)); 
-		}
-
-	}
-
-	// Change links in remote vertexes
-	for( std::vector<candidate>::iterator it = candidates.begin(); it != candidates.end(); it++ ) {
-
-		if( it->edges.count(src.id) ) {
-
-			if( it->edges.count(dest.id) ) {
-				it->edges.at(dest.id) += it->edges.at(src.id); 
-			} else {
-				it->edges.insert(std::pair<int,int>(dest.id, it->edges.at(src.id))); 
-			}
-
-			it->edges.erase(src.id); 
-
-		}
-
-	}
-
-}
-	
 
 #endif

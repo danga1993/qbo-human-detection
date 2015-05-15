@@ -33,21 +33,26 @@ int main(int argc, char** argv)
 			break; 
 	}
 
-	// Performance classes
-	Performance_Auto perform_auto(features, "boost.data"); 
-	Performance_Manual perform_manual(features, "boost.data");
-
 	// Results
 	int true_positives = 0; 
 	int false_positives = 0; 
 	int actual_positives = 0; 
 	int actual_negatives = 0;
 
+
 	// Measure performance
 	if( TEST_SEGMENT_AUTO ) {
+
+		Performance_Auto perform_auto(features, "boost.data"); 
+
 		perform_auto.measure(true_positives, false_positives, actual_positives, "test_frames", TEST_MIS_DIR); 
+
 	} else {
+
+		Performance_Manual perform_manual(features, "boost.data");
+
 		perform_manual.measure(true_positives, false_positives, actual_positives, actual_negatives, "test_data", TEST_MIS_DIR); 
+
 	}
 
 	// Compile statistics

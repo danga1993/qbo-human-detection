@@ -70,11 +70,11 @@ void Tagger::tag(std::vector<candidate>& candidates, std::vector<cv::Rect>& boun
 bool Tagger::candidate_intersect(candidate& cand, cv::Rect& box) {
 
 	// Area of intersection
-	int area_intersect = (cand.boundingBox & box).area(); 
-	int area_total = cand.boundingBox.area() + box.area() - area_intersect;
+	int area_intersect = (cand.box & box).area(); 
+	int area_total = cand.box.area() + box.area() - area_intersect;
 
-	/* std::cout << "Candidate: " << cand.boundingBox << " Box: " << box << std::endl;
-  std::cout << "Intersect area: " << area_intersect << " Total area: " << area_total << std::endl; */
+	// std::cout << "Candidate: " << cand.box << " Box: " << box << std::endl;
+  //std::cout << "Intersect area: " << area_intersect << " Total area: " << area_total << std::endl;
 
 	// Check for required intersection fraction
 	if( (float)area_intersect / area_total > MIN_INTERSECT_RATIO )
